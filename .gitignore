@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.env.local
+*.log
+.DS_Store
+coverage
+.vite
+dist-ssr
+*.local
+.wrangler
+wrangler.toml

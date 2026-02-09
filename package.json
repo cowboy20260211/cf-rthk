@@ -1,0 +1,56 @@
+{
+  "name": "rthk-radio-cf",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "香港电台CF版 - 在线收听与节目点播平台",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint src --ext ts,tsx --fix",
+    "format": "prettier --write src",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "workers:dev": "wrangler dev",
+    "workers:deploy": "wrangler deploy",
+    "workers:build": "esbuild workers/src/index.ts --bundle --outfile=dist/workers.js --format=esm --loader:.wasm=file --external:npx:*
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.0",
+    "howler": "^2.2.4",
+    "axios": "^1.6.2",
+    "zustand": "^4.4.7",
+    "dayjs": "^1.11.10",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@types/howler": "^2.2.11",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "postcss": "^8.4.32",
+    "prettier": "^3.1.1",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8",
+    "vitest": "^1.1.0",
+    "@cloudflare/workers-types": "^4.20231218.0",
+    "wrangler": "^3.22.0",
+    "esbuild": "^0.19.10"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

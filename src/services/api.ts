@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { LiveChannel, Program, Episode } from '../types';
+import type { LiveChannel, Program, Episode, Favorite } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { usePlayerStore } from '../../stores/playerStore';
 import AudioPlayer from '../../components/Player/AudioPlayer';
 

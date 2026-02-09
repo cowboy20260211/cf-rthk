@@ -55,7 +55,7 @@ class RTHKService {
       const $ = cheerio.load(data);
       const programs: Program[] = [];
 
-      $('.programme-item').each((_, element) => {
+      $('.programme-item').each((_index: number, element: cheerio.Element) => {
         const id = $(element).attr('data-id');
         const title = $(element).find('.title').text().trim();
         const description = $(element).find('.description').text().trim();
@@ -112,7 +112,7 @@ class RTHKService {
       const $ = cheerio.load(data);
       const episodes: Episode[] = [];
 
-      $('.episode-item').each((_, element) => {
+      $('.episode-item').each((_index: number, element: cheerio.Element) => {
         const id = $(element).attr('data-id');
         const title = $(element).find('.title').text().trim();
         const publishDate = $(element).attr('data-date') || '';

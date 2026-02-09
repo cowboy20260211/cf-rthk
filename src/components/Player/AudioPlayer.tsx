@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Howl } from 'howler';
-import clsx from 'clsx';
 import { usePlayerStore } from '../../stores/playerStore';
 
 export default function AudioPlayer() {

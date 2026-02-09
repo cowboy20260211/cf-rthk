@@ -1,0 +1,35 @@
+name = "rthk-radio-cf"
+main = "workers/src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+API_VERSION = "v1"
+
+# Cloudflare KV 命名空间 (需要在 Cloudflare 控制台创建)
+# 运行: wrangler kv:namespace create FAVORITES
+# 运行: wrangler kv:namespace create HISTORY
+# 运行: wrangler kv:namespace create SETTINGS
+
+[[kv_namespaces]]
+binding = "FAVORITES"
+id = ""  # 配置你的 KV namespace ID
+
+[[kv_namespaces]]
+binding = "HISTORY"
+id = ""  # 配置你的 KV namespace ID
+
+[[kv_namespaces]]
+binding = "SETTINGS"
+id = ""  # 配置你的 KV namespace ID
+
+[build]
+command = "npm run workers:build"
+
+[dev]
+local = true
+port = 8787
+
+[deploy]
+project_name = "rthk-radio-cf"

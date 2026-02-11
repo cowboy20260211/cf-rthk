@@ -1,0 +1,16 @@
+{
+  "name": "香港電台CF版",
+  "short_name": "RTHK CF",
+  "description": "香港電台在线收听与节目点播平台",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d40000",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

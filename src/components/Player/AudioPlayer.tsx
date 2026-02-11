@@ -197,18 +197,18 @@ export default function AudioPlayer() {
             <span style={{ color: 'white', fontSize: '12px' }}>▼</span>
           </div>
 
-          <div style={{ position: 'absolute', left: '10px', top: isLive ? '12px' : '8px', width: 'calc(100% - 60px)' }}>
+          <div style={{ position: 'absolute', left: '10px', top: isLive ? '12px' : '8px', width: 'calc(100% - 50px)' }}>
             <div style={{ fontSize: '14px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentEpisode?.title || currentChannel?.name || '未知频道'}</div>
             <div style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentEpisode?.publishDate || currentChannel?.description || ''}</div>
           </div>
 
-          {/* 红底圆形播放按钮 30px */}
+          {/* 红底圆形播放按钮 20px */}
           <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
             <button 
               onClick={togglePlay}
               style={{
-                width: '30px',
-                height: '30px',
+                width: '20px',
+                height: '20px',
                 borderRadius: '50%',
                 background: '#d40000',
                 border: 'none',
@@ -219,7 +219,7 @@ export default function AudioPlayer() {
                 boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
               }}
             >
-              <span style={{ color: 'white', fontSize: '12px' }}>{isPlaying ? '⏸' : '▶'}</span>
+              <span style={{ color: 'white', fontSize: '10px' }}>{isPlaying ? '⏸' : '▶'}</span>
             </button>
           </div>
 

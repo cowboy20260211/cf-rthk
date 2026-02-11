@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { usePlayer } from '../../stores/PlayerContext';
-import { useFavorite } from '../../stores/FavoriteContext';
 import { RTHK_LIVE_STREAMS } from '../../services/rthk';
 
 export default function AudioPlayer() {
   const { currentChannel, currentEpisode } = usePlayer();
-  const { favorites, addFavorite, removeFavorite } = useFavorite();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -72,23 +70,6 @@ export default function AudioPlayer() {
       audioRef.current.pause();
     } else {
       audioRef.current.play().catch(() => {});
-    }
-  };
-
-  const toggleFavorite = () => {
-    if (!currentEpisode) return;
-    
-    const isFav = favorites.some(f => f.programId === currentEpisode.programId);
-    if (isFav) {
-      const fav = favorites.find(f => f.programId === currentEpisode.programId);
-      if (fav) removeFavorite(fav.id);
-    } else {
-      addFavorite({
-        episodeId: currentEpisode.id,
-        programId: currentEpisode.programId,
-        title: currentEpisode.title,
-        channel: currentChannel?.name || '第一台',
-      });
     }
   };
 
@@ -250,7 +231,7 @@ export default function AudioPlayer() {
         borderTop: isExpanded ? '2px solid #d40000' : 'none',
         zIndex: 50,
         transition: 'all 0.3s ease',
-        height: isExpanded ? '100px' : '5px',
+        height: isExpanded ? '80px' : '5px',
       }}
     >
       {/* 收起状态：只显示红色细条 */}
@@ -264,7 +245,7 @@ export default function AudioPlayer() {
         />
       )}
 
-      {/* 展开状态：显示完整播放器 */}
+      {/* 展开状态：显示播放器内容（不显示收藏按钮） */}
       {isExpanded && (
         <>
           {/* 展开/收起按钮 */}
@@ -295,7 +276,7 @@ export default function AudioPlayer() {
               position: 'absolute',
               left: '10px',
               top: '8px',
-              width: 'calc(100% - 160px)',
+              width: 'calc(100% - 80px)',
             }}
           >
             <div
@@ -322,13 +303,13 @@ export default function AudioPlayer() {
             </div>
           </div>
 
-          {/* 中间：播放按钮 */}
+          {/* 右侧：播放按钮 */}
           <div
             style={{
               position: 'absolute',
-              left: '50%',
+              right: '10px',
               top: '50%',
-              transform: 'translate(-50%, -50%)',
+              transform: 'translateY(-50%)',
             }}
           >
             <button
@@ -345,38 +326,13 @@ export default function AudioPlayer() {
             </button>
           </div>
 
-          {/* 收藏按钮 */}
-          <div
-            style={{
-              position: 'absolute',
-              right: '10px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-            }}
-          >
-            <button
-              onClick={toggleFavorite}
-              style={{
-                fontSize: '24px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '5px',
-              }}
-            >
-              {currentEpisode && favorites.some(f => f.programId === currentEpisode.programId) 
-                ? '⭐' 
-                : '☆'}
-            </button>
-          </div>
-
           {/* 时间轴 */}
           <div
             style={{
               position: 'absolute',
-              bottom: '8px',
+              bottom: '6px',
               left: '10px',
-              right: '10px',
+              right: '70px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',

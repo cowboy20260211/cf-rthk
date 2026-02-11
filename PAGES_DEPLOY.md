@@ -4,7 +4,7 @@
 
 ### 前提条件
 
-1. Cloudflare 账户 (2026012701@cowboy.cc.cd)
+1. Cloudflare 账户 (20260211@cowboy.cc.cd)
 2. GitHub 仓库已配置
 
 ### 配置步骤
@@ -58,7 +58,7 @@ git push origin main
 npm run build
 
 # 部署到 Pages
-npx wrangler pages deploy dist --project-name=rthk-radio-cf
+npx wrangler pages deploy dist --project-name=cf-rthk
 ```
 
 ---
@@ -79,7 +79,7 @@ npx wrangler pages deploy dist --project-name=rthk-radio-cf
 
 部署成功后，访问:
 
-- Production: `https://rthk-radio-cf.pages.dev`
+- Production: `https://cf-rthk.pages.dev`
 - 自定义域名: 配置后显示
 
 ---

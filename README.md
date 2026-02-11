@@ -61,7 +61,7 @@ npm run pages:deploy
 
 ```bash
 npm run build
-npx wrangler pages deploy dist --project-name=rthk-radio-cf
+npx wrangler pages deploy dist --project-name=cf-rthk
 ```
 
 ## 项目结构
@@ -97,7 +97,7 @@ npx wrangler pages deploy dist --project-name=rthk-radio-cf
 
 ### 访问地址
 
-- Production: https://rthk-radio-cf.pages.dev
+- Production: https://cf-rthk.pages.dev
 
 ## 许可证
 

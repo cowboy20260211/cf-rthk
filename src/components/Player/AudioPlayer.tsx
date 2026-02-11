@@ -228,29 +228,44 @@ export default function AudioPlayer() {
         left: 0,
         right: 0,
         background: isExpanded ? 'white' : 'transparent',
-        borderTop: isExpanded ? '2px solid #d40000' : 'none',
         zIndex: 50,
         transition: 'all 0.3s ease',
         height: isExpanded ? '80px' : '5px',
       }}
     >
-      {/* 收起状态：只显示红色细条 */}
+      {/* 收起状态：红条中间显示展开按钮 */}
       {!isExpanded && (
-        <div
-          style={{
-            height: '5px',
-            background: '#d40000',
-            width: '100%',
-          }}
-        />
+        <div style={{ position: 'relative', height: '5px' }}>
+          <div style={{ height: '5px', background: '#d40000', width: '100%' }} />
+          <div
+            onClick={() => setIsExpanded(true)}
+            style={{
+              position: 'absolute',
+              top: '-22px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '40px',
+              height: '25px',
+              background: '#d40000',
+              borderRadius: '8px 8px 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 51,
+            }}
+          >
+            <span style={{ color: 'white', fontSize: '10px' }}>▲</span>
+          </div>
+        </div>
       )}
 
-      {/* 展开状态：显示播放器内容（不显示收藏按钮） */}
+      {/* 展开状态：显示播放器内容 */}
       {isExpanded && (
         <>
-          {/* 展开/收起按钮 */}
+          {/* 收起按钮 */}
           <div
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => setIsExpanded(false)}
             style={{
               position: 'absolute',
               top: '-20px',

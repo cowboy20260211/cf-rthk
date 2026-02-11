@@ -30,101 +30,28 @@ export default function AudioPlayer() {
   const lastEpisodeIdRef = useRef<string>('');
   const isLive = !currentEpisode && currentChannel;
 
-  // Create audio element
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    console.log('[Player] Creating audio element');
-    audioRef.current = new Audio();
-    audioRef.current.crossOrigin = 'anonymous';
-    audioRef.current.volume = 1;
-
-    const audio = audioRef.current;
-
-    const onPlay = () => {
-      console.log('[Player] play event fired');
-      setIsPlaying(true);
-    };
-    const onPause = () => {
-      console.log('[Player] pause event fired');
-      setIsPlaying(false);
-    };
-    const onTimeUpdate = () => {
-      if (audio && !audio.paused) {
-        setCurrentTime(audio.currentTime);
-      }
-    };
-    const onLoadedMetadata = () => {
-      if (audio) {
-        const dur = audio.duration;
-        console.log('[Player] metadata loaded, duration:', dur);
-        if (dur && isFinite(dur) && dur > 0) {
-          setDuration(dur);
-        } else {
-          // Fallback to episode duration
-          console.log('[Player] No duration from HLS, using episode data');
-        }
-      }
-    };
-    const onEnded = () => {
-      console.log('[Player] ended');
-      setIsPlaying(false);
-      setCurrentTime(0);
-    };
-    const onError = () => {
-      console.log('[Player] error:', audio.error);
-      setIsPlaying(false);
-    };
-
-    audio.addEventListener('play', onPlay);
-    audio.addEventListener('pause', onPause);
-    audio.addEventListener('timeupdate', onTimeUpdate);
-    audio.addEventListener('loadedmetadata', onLoadedMetadata);
-    audio.addEventListener('ended', onEnded);
-    audio.addEventListener('error', onError);
-
-    return () => {
-      console.log('[Player] cleanup');
-      audio.removeEventListener('play', onPlay);
-      audio.removeEventListener('pause', onPause);
-      audio.removeEventListener('timeupdate', onTimeUpdate);
-      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-      audio.removeEventListener('ended', onEnded);
-      audio.removeEventListener('error', onError);
-
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-      audio.pause();
-      audio.src = '';
-    };
-  }, []);
-
-  // Toggle play/pause
+  // Play/Pause handler
   const handlePlayPause = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    console.log('[Player] Button clicked, current paused:', audio.paused);
-    console.log('[Player] Current isPlaying state:', isPlaying);
+    console.log('[Player] Button clicked, paused:', audio.paused);
 
     if (audio.paused) {
-      console.log('[Player] Calling play()');
       audio.play().then(() => {
-        console.log('[Player] play() success');
-        setIsPlaying(true); // 立即更新状态
+        console.log('[Player] Play success');
+        setIsPlaying(true);
       }).catch(err => {
-        console.log('[Player] play() failed:', err);
+        console.log('[Player] Play failed:', err);
       });
     } else {
-      console.log('[Player] Calling pause()');
       audio.pause();
-      setIsPlaying(false); // 立即更新状态
+      console.log('[Player] Pause called');
+      setIsPlaying(false);
     }
-  }, [isPlaying]);
+  }, []);
 
-  // Seek
+  // Seek handler
   const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -142,6 +69,54 @@ export default function AudioPlayer() {
     const s = Math.floor(seconds % 60);
     if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     return `${m}:${s.toString().padStart(2, '0')}`;
+  }, []);
+
+  // Initialize audio
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const audio = new Audio();
+    audio.crossOrigin = 'anonymous';
+    audio.volume = 1;
+    audioRef.current = audio;
+
+    // Time update - update every 250ms
+    const timeUpdateHandler = () => {
+      if (!audio.paused) {
+        setCurrentTime(audio.currentTime);
+      }
+    };
+    audio.addEventListener('timeupdate', timeUpdateHandler);
+
+    // Play/Pause events
+    audio.addEventListener('play', () => {
+      console.log('[Player] play event');
+      setIsPlaying(true);
+    });
+    audio.addEventListener('pause', () => {
+      console.log('[Player] pause event');
+      setIsPlaying(false);
+    });
+    audio.addEventListener('ended', () => {
+      console.log('[Player] ended');
+      setIsPlaying(false);
+      setCurrentTime(0);
+    });
+
+    return () => {
+      console.log('[Player] Cleanup');
+      audio.removeEventListener('timeupdate', timeUpdateHandler);
+      audio.removeEventListener('play', () => {});
+      audio.removeEventListener('pause', () => {});
+      audio.removeEventListener('ended', () => {});
+      
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      audio.pause();
+      audio.src = '';
+    };
   }, []);
 
   // Load media
@@ -165,14 +140,13 @@ export default function AudioPlayer() {
 
     const episodeId = currentEpisode?.id || `live-${currentChannel?.id || ''}`;
     
-    // Check if same content
     if (lastEpisodeIdRef.current === episodeId && audio.src === streamUrl) {
-      console.log('[Player] Same content, skip reload');
+      console.log('[Player] Same, skip');
       return;
     }
     lastEpisodeIdRef.current = episodeId;
 
-    console.log('[Player] Loading new content:', episodeId);
+    console.log('[Player] Loading:', episodeId);
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -180,33 +154,41 @@ export default function AudioPlayer() {
     }
 
     audio.pause();
-    
+
+    // Reset state
+    setIsPlaying(false);
+    setCurrentTime(0);
+
     if (isLive) {
-      audio.currentTime = 0;
-      setCurrentTime(0);
       setDuration(0);
     } else if (currentEpisode) {
-      const start = currentEpisode.startTime || 0;
-      audio.currentTime = start;
-      setCurrentTime(start);
-      // Use episode duration as fallback
-      if (currentEpisode.duration) {
-        setDuration(currentEpisode.duration);
-      } else {
-        setDuration(3600);
-      }
+      const dur = currentEpisode.duration || 3600;
+      setDuration(dur);
+      audio.currentTime = currentEpisode.startTime || 0;
+      setCurrentTime(currentEpisode.startTime || 0);
     }
 
-    // HLS or native
+    // HLS loading
     if (streamUrl.includes('.m3u8') && Hls.isSupported()) {
-      console.log('[Player] Loading HLS');
+      console.log('[Player] Using HLS');
       const hls = new Hls(isLive ? {} : { startPosition: currentEpisode?.startTime || 0 });
       hlsRef.current = hls;
       hls.attachMedia(audio);
       hls.loadSource(streamUrl);
-      
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        console.log('[Player] HLS manifest parsed');
+
+      hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+        console.log('[Player] Manifest parsed, levels:', data.levels.length);
+        
+        // Get duration from HLS levels
+        if (data.levels && data.levels.length > 0) {
+          const level = data.levels[0];
+          if (level.details && level.details.duration) {
+            const dur = level.details.duration;
+            console.log('[Player] HLS duration:', dur);
+            setDuration(dur);
+          }
+        }
+        
         if (!isLive && currentEpisode) {
           audio.currentTime = currentEpisode.startTime || 0;
         }
@@ -216,10 +198,13 @@ export default function AudioPlayer() {
           console.log('[Player] Auto-play failed:', err);
         });
       });
-      
-      hls.on(Hls.Events.ERROR, (_e, data) => {
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
         console.log('[Player] HLS error:', data.type, data.fatal);
-        if (data.fatal) hls.startLoad();
+        if (data.fatal) {
+          console.log('[Player] Fatal error, restart');
+          hls.startLoad();
+        }
       });
     } else {
       console.log('[Player] Native audio');
@@ -238,10 +223,9 @@ export default function AudioPlayer() {
     }
   }, [currentEpisode, currentChannel]);
 
-  // Reset
+  // Reset when nothing playing
   useEffect(() => {
     if (!currentChannel && !currentEpisode) {
-      console.log('[Player] Nothing playing');
       setIsPlaying(false);
       setCurrentTime(0);
       setDuration(0);

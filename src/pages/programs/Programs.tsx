@@ -70,9 +70,22 @@ export default function Programs() {
         <div className='w-16'></div>
       </div>
 
-      <div className='flex gap-2 mb-4 overflow-x-auto pb-2'>
-        {/* 热门/全部 切换 */}
-        <div className='flex gap-1 mr-2'>
+      <div className='flex gap-2 mb-4 overflow-x-auto pb-2 items-center'>
+        {/* 频道选择 */}
+        {channels.map(channel => (
+          <button
+            key={channel.id}
+            onClick={() => setSelectedChannel(channel.id)}
+            className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${
+              selectedChannel === channel.id
+                ? 'bg-rthk-red text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            {channel.name}
+          </button>
+        ))}
+        <div className='flex gap-1 ml-auto flex-shrink-0'>
           <button
             onClick={() => setViewMode('popular')}
             className={`px-3 py-2 rounded-full whitespace-nowrap transition-colors text-sm ${
@@ -94,20 +107,6 @@ export default function Programs() {
             全部
           </button>
         </div>
-        {/* 频道选择 */}
-        {channels.map(channel => (
-          <button
-            key={channel.id}
-            onClick={() => setSelectedChannel(channel.id)}
-            className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${
-              selectedChannel === channel.id
-                ? 'bg-rthk-red text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {channel.name}
-          </button>
-        ))}
       </div>
 
       <input

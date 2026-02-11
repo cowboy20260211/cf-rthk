@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { rthkApi, type Program } from '../../services/rthkApi';
 import { useFavorite } from '../../stores/FavoriteContext';
@@ -9,17 +9,73 @@ const channels = [
   { id: 'radio5', name: '第五台' },
 ];
 
+const PAGE_SIZE = 20;
+
 export default function Programs() {
   const [selectedChannel, setSelectedChannel] = useState<string>('radio2');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'popular' | 'all'>('popular');
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { favorites, addFavorite, removeFavorite } = useFavorite();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Load programs based on view mode
+  useEffect(() => {
+    setLoading(true);
+    setPage(1);
+
+    if (viewMode === 'popular') {
+      const allPrograms = rthkApi.getProgramsByChannel(selectedChannel);
+      const popular = allPrograms.slice(0, 4);
+      setPrograms(popular);
+      setHasMore(false);
+    } else {
+      // Load all programs paged
+      rthkApi.getAllProgramsPaged(selectedChannel, 1, PAGE_SIZE).then(result => {
+        setPrograms(result.programs);
+        setHasMore(result.hasMore);
+        setLoading(false);
+      });
+    }
+  }, [selectedChannel, viewMode]);
+
+  // Load more when scrolling
+  useEffect(() => {
+    if (viewMode !== 'all' || !hasMore || loading) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [viewMode, hasMore, loading, page]);
+
+  const loadMore = async () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+    const nextPage = page + 1;
+    const result = await rthkApi.getAllProgramsPaged(selectedChannel, nextPage, PAGE_SIZE);
+    setPrograms(prev => [...prev, ...result.programs]);
+    setPage(nextPage);
+    setHasMore(result.hasMore);
+    setLoading(false);
+  };
 
   const allPrograms = rthkApi.getProgramsByChannel(selectedChannel);
-
-  // Filter popular programs (first 4) or all programs
   const popularPrograms = allPrograms.slice(0, 4);
-  const displayedPrograms = viewMode === 'popular' ? popularPrograms : allPrograms;
+  const displayedPrograms = viewMode === 'popular' ? popularPrograms : programs;
 
   const filteredPrograms = displayedPrograms.filter(
     (p: Program) =>
@@ -160,6 +216,17 @@ export default function Programs() {
             </svg>
           </div>
         ))}
+
+        {/* Load more trigger */}
+        {viewMode === 'all' && hasMore && (
+          <div ref={loadMoreRef} className='text-center py-4'>
+            {loading ? (
+              <span className='text-gray-500'>載入中...</span>
+            ) : (
+              <span className='text-gray-400'>向下滾動載入更多</span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -776,9 +776,23 @@ export const rthkApi = {
     return PROGRAMS[channelId] || [];
   },
 
-  // Get all programs
+  // Get all programs (from archive)
   getAllPrograms(): Program[] {
     return Object.values(PROGRAMS).flat();
+  },
+
+  // Get all programs with infinite scroll support
+  async getAllProgramsPaged(
+    channelId: string,
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<{ programs: Program[]; hasMore: boolean }> {
+    const allPrograms = PROGRAMS[channelId] || [];
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const programs = allPrograms.slice(start, end);
+    const hasMore = end < allPrograms.length;
+    return { programs, hasMore };
   },
 
   // Get program detail with episodes

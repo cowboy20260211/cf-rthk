@@ -13,6 +13,9 @@ export default function AudioPlayer() {
   const [duration, setDuration] = useState(0);
   const lastEpisodeIdRef = useRef<string>('');
 
+  // 是否为直播
+  const isLive = !currentEpisode && currentChannel;
+
   // Initialize audio element
   useEffect(() => {
     audioRef.current = new Audio();
@@ -230,10 +233,10 @@ export default function AudioPlayer() {
         background: isExpanded ? 'white' : 'transparent',
         zIndex: 50,
         transition: 'all 0.3s ease',
-        height: isExpanded ? '80px' : '5px',
+        height: isExpanded ? (isLive ? '50px' : '80px') : '5px',
       }}
     >
-      {/* 收起状态：红条右侧显示展开按钮 */}
+      {/* 收起状态：红条右侧半透明按钮 */}
       {!isExpanded && (
         <div style={{ position: 'relative', height: '5px' }}>
           <div style={{ height: '5px', background: '#d40000', width: '100%' }} />
@@ -245,7 +248,7 @@ export default function AudioPlayer() {
               top: '-22px',
               width: '40px',
               height: '25px',
-              background: '#d40000',
+              background: 'rgba(212, 0, 0, 0.6)',
               borderRadius: '8px 8px 0 0',
               display: 'flex',
               alignItems: 'center',
@@ -262,7 +265,7 @@ export default function AudioPlayer() {
       {/* 展开状态：显示播放器内容 */}
       {isExpanded && (
         <>
-          {/* 收起按钮 */}
+          {/* 收起按钮（红条上右侧半透明） */}
           <div
             onClick={() => setIsExpanded(false)}
             style={{
@@ -271,7 +274,7 @@ export default function AudioPlayer() {
               right: '10px',
               width: '60px',
               height: '25px',
-              background: '#d40000',
+              background: 'rgba(212, 0, 0, 0.6)',
               borderRadius: '15px 15px 0 0',
               display: 'flex',
               alignItems: 'center',
@@ -288,7 +291,7 @@ export default function AudioPlayer() {
             style={{
               position: 'absolute',
               left: '10px',
-              top: '8px',
+              top: isLive ? '12px' : '8px',
               width: 'calc(100% - 80px)',
             }}
           >
@@ -303,24 +306,26 @@ export default function AudioPlayer() {
             >
               {getDisplayName()}
             </div>
-            <div
-              style={{
-                fontSize: '12px',
-                color: '#666',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {getDisplayDesc()}
-            </div>
+            {!isLive && (
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: '#666',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {getDisplayDesc()}
+              </div>
+            )}
           </div>
 
           {/* 右侧：播放按钮 */}
           <div
             style={{
               position: 'absolute',
-              right: '80px',
+              right: isLive ? '10px' : '80px',
               top: '50%',
               transform: 'translateY(-50%)',
             }}
@@ -339,61 +344,65 @@ export default function AudioPlayer() {
             </button>
           </div>
 
-          {/* 最右侧：收起按钮 */}
-          <div
-            style={{
-              position: 'absolute',
-              right: '10px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-            }}
-          >
-            <button
-              onClick={() => setIsExpanded(false)}
+          {/* 最右侧：收起按钮（直播时显示） */}
+          {isLive && (
+            <div
               style={{
-                fontSize: '16px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '5px',
-                color: '#999',
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
               }}
             >
-              ▼
-            </button>
-          </div>
+              <button
+                onClick={() => setIsExpanded(false)}
+                style={{
+                  fontSize: '16px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '5px',
+                  color: '#999',
+                }}
+              >
+                ▼
+              </button>
+            </div>
+          )}
 
-          {/* 时间轴 */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '6px',
-              left: '10px',
-              right: '120px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <span style={{ fontSize: '11px', color: '#666', minWidth: '35px' }}>
-              {formatTime(currentTime)}
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={duration || 100}
-              value={currentTime}
-              onChange={handleSeek}
+          {/* 时间轴（仅重温时显示） */}
+          {!isLive && (
+            <div
               style={{
-                flex: 1,
-                height: '4px',
-                cursor: 'pointer',
+                position: 'absolute',
+                bottom: '6px',
+                left: '10px',
+                right: '120px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
               }}
-            />
-            <span style={{ fontSize: '11px', color: '#666', minWidth: '35px', textAlign: 'right' }}>
-              {formatTime(duration)}
-            </span>
-          </div>
+            >
+              <span style={{ fontSize: '11px', color: '#666', minWidth: '35px' }}>
+                {formatTime(currentTime)}
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                value={currentTime}
+                onChange={handleSeek}
+                style={{
+                  flex: 1,
+                  height: '4px',
+                  cursor: 'pointer',
+                }}
+              />
+              <span style={{ fontSize: '11px', color: '#666', minWidth: '35px', textAlign: 'right' }}>
+                {formatTime(duration)}
+              </span>
+            </div>
+          )}
         </>
       )}
 

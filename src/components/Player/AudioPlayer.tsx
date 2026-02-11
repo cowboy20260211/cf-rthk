@@ -13,10 +13,9 @@ export default function AudioPlayer() {
   const [duration, setDuration] = useState(0);
   const lastEpisodeIdRef = useRef<string>('');
 
-  // 是否为直播
   const isLive = !currentEpisode && currentChannel;
 
-  // Initialize audio element
+  // Initialize audio
   useEffect(() => {
     audioRef.current = new Audio();
     audioRef.current.crossOrigin = 'anonymous';
@@ -42,12 +41,16 @@ export default function AudioPlayer() {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
-      audioRef.current = null;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current = null;
+      }
     };
   }, []);
 
   const getStreamUrl = () => {
-    if (currentEpisode && currentEpisode.audioUrl) {
+    if (currentEpisode?.audioUrl) {
       return currentEpisode.audioUrl;
     }
     if (currentEpisode) {
@@ -69,38 +72,43 @@ export default function AudioPlayer() {
 
   const togglePlay = () => {
     if (!audioRef.current) return;
+    
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch(err => {
+        console.log('Play error:', err);
+      });
     }
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
+    setCurrentTime(time);
     if (audioRef.current) {
       audioRef.current.currentTime = time;
-      setCurrentTime(time);
     }
   };
 
   const formatTime = (seconds: number) => {
-    if (isNaN(seconds) || !isFinite(seconds) || seconds === Infinity) return '--:--';
+    if (isNaN(seconds) || !isFinite(seconds) || seconds === Infinity || seconds === 0) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Load stream when episode/channel changes
   useEffect(() => {
     const audio = audioRef.current;
     const streamUrl = getStreamUrl();
 
     if (!audio || !streamUrl) return;
 
-    const isLiveStream = !currentEpisode && currentChannel;
-    const isEpisodePlayback = currentEpisode;
+    const isEpisodePlayback = !!currentEpisode;
+    const isLivePlayback = !currentEpisode && !!currentChannel;
 
-    if (isLiveStream) {
+    // Live stream
+    if (isLivePlayback) {
       const lastChannelId = lastEpisodeIdRef.current.split('-')[0] === 'live' 
         ? lastEpisodeIdRef.current.replace('live-', '') 
         : '';
@@ -124,9 +132,7 @@ export default function AudioPlayer() {
 
         try {
           hls.attachMedia(audio);
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) {}
 
         hls.loadSource(streamUrl);
 
@@ -153,14 +159,10 @@ export default function AudioPlayer() {
         audio.play().catch(() => {});
       }
 
-      return () => {
-        if (hlsRef.current) {
-          hlsRef.current.destroy();
-          hlsRef.current = null;
-        }
-      };
+      return;
     }
 
+    // Episode playback
     if (!isEpisodePlayback) return;
 
     const episodeChanged = currentEpisode.id !== lastEpisodeIdRef.current;
@@ -210,13 +212,6 @@ export default function AudioPlayer() {
         audio.play().catch(() => {});
       };
     }
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-    };
   }, [currentEpisode?.id, currentEpisode?.audioUrl, currentEpisode?.startTime, currentChannel?.id, currentChannel?.streamUrl]);
 
   if (!currentChannel && !currentEpisode) {
@@ -236,7 +231,7 @@ export default function AudioPlayer() {
         height: isExpanded ? (isLive ? '50px' : '80px') : '5px',
       }}
     >
-      {/* 收起状态：红条右侧半透明按钮 */}
+      {/* 收起状态 */}
       {!isExpanded && (
         <div style={{ position: 'relative', height: '5px' }}>
           <div style={{ height: '5px', background: '#d40000', width: '100%' }} />
@@ -306,32 +301,17 @@ export default function AudioPlayer() {
             >
               {getDisplayName()}
             </div>
-            {isLive && currentChannel?.description && (
-              <div
-                style={{
-                  fontSize: '12px',
-                  color: '#666',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {getDisplayDesc()}
-              </div>
-            )}
-            {!isLive && (
-              <div
-                style={{
-                  fontSize: '12px',
-                  color: '#666',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {getDisplayDesc()}
-              </div>
-            )}
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#666',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {getDisplayDesc()}
+            </div>
           </div>
 
           {/* 右侧：播放按钮 */}
@@ -357,7 +337,7 @@ export default function AudioPlayer() {
             </button>
           </div>
 
-          {/* 时间轴（仅重温时显示） */}
+          {/* 时间轴 */}
           {!isLive && (
             <div
               style={{
@@ -376,7 +356,7 @@ export default function AudioPlayer() {
               <input
                 type="range"
                 min={0}
-                max={duration > 0 ? duration : 100}
+                max={Math.max(duration, 1)}
                 value={currentTime}
                 onChange={handleSeek}
                 style={{

@@ -4,7 +4,7 @@ import { usePlayer } from '../../stores/PlayerContext';
 import { RTHK_LIVE_STREAMS } from '../../services/rthk';
 
 export default function AudioPlayer() {
-  const { currentChannel, currentEpisode } = usePlayer();
+  const { currentChannel, currentEpisode, volume } = usePlayer();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [status, setStatus] = useState('等待中');
@@ -54,7 +54,18 @@ export default function AudioPlayer() {
   useEffect(() => {
     audioRef.current = new Audio();
     audioRef.current.crossOrigin = 'anonymous';
+    audioRef.current.volume = volume;
+    audioRef.current.muted = false;
   }, []);
+
+  // Sync volume when it changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+      audioRef.current.muted = false;
+      console.log('Volume set to:', volume);
+    }
+  }, [volume]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -117,13 +128,22 @@ export default function AudioPlayer() {
               setHlsDuration(duration);
               console.log('HLS duration from manifest:', duration);
             }
+            // Ensure audio is not muted and volume is set
+            audio.muted = false;
+            audio.volume = volume;
+            console.log('Audio volume set to:', audio.volume, 'muted:', audio.muted);
+
             audio
               .play()
               .then(() => {
+                console.log('Play started successfully');
                 setStatus('播放中');
                 setErrorMsg('');
               })
-              .catch(() => setStatus('點擊播放'));
+              .catch(err => {
+                console.log('Play failed:', err);
+                setStatus('點擊播放');
+              });
           });
 
           hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -355,25 +375,44 @@ export default function AudioPlayer() {
             <div style={{ fontSize: '12px', color: '#d40000' }}>{status}</div>
             {errorMsg && <div style={{ fontSize: '10px', color: '#999' }}>{errorMsg}</div>}
           </div>
-          <button
-            onClick={handlePlay}
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              background: '#d40000',
-              color: 'white',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              marginLeft: '12px',
-            }}
-          >
-            {isPaused ? '▶' : '⏸'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '16px' }}>
+              {volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+            </span>
+            <input
+              type='range'
+              min='0'
+              max='1'
+              step='0.1'
+              value={volume}
+              onChange={e => {
+                const newVolume = parseFloat(e.target.value);
+                if (audioRef.current) {
+                  audioRef.current.volume = newVolume;
+                  audioRef.current.muted = false;
+                }
+              }}
+              style={{ width: '60px', cursor: 'pointer' }}
+            />
+            <button
+              onClick={handlePlay}
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: '#d40000',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+              }}
+            >
+              {isPaused ? '▶' : '⏸'}
+            </button>
+          </div>
         </div>
 
         {currentEpisode && (

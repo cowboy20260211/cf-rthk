@@ -7,7 +7,7 @@ export default function AudioPlayer() {
   const { currentChannel, currentEpisode } = usePlayer();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true); // 默认展开
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -233,7 +233,7 @@ export default function AudioPlayer() {
         height: isExpanded ? '80px' : '5px',
       }}
     >
-      {/* 收起状态：红条中间显示展开按钮 */}
+      {/* 收起状态：红条右侧显示展开按钮 */}
       {!isExpanded && (
         <div style={{ position: 'relative', height: '5px' }}>
           <div style={{ height: '5px', background: '#d40000', width: '100%' }} />
@@ -241,9 +241,8 @@ export default function AudioPlayer() {
             onClick={() => setIsExpanded(true)}
             style={{
               position: 'absolute',
+              right: '10px',
               top: '-22px',
-              left: '50%',
-              transform: 'translateX(-50%)',
               width: '40px',
               height: '25px',
               background: '#d40000',
@@ -269,8 +268,7 @@ export default function AudioPlayer() {
             style={{
               position: 'absolute',
               top: '-20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              right: '10px',
               width: '60px',
               height: '25px',
               background: '#d40000',
@@ -322,7 +320,7 @@ export default function AudioPlayer() {
           <div
             style={{
               position: 'absolute',
-              right: '10px',
+              right: '80px',
               top: '50%',
               transform: 'translateY(-50%)',
             }}
@@ -341,13 +339,37 @@ export default function AudioPlayer() {
             </button>
           </div>
 
+          {/* 最右侧：收起按钮 */}
+          <div
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+            }}
+          >
+            <button
+              onClick={() => setIsExpanded(false)}
+              style={{
+                fontSize: '16px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '5px',
+                color: '#999',
+              }}
+            >
+              ▼
+            </button>
+          </div>
+
           {/* 时间轴 */}
           <div
             style={{
               position: 'absolute',
               bottom: '6px',
               left: '10px',
-              right: '70px',
+              right: '120px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',

@@ -7,7 +7,7 @@ export default function AudioPlayer() {
   const { currentChannel, currentEpisode } = usePlayer();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const [isExpanded, setIsExpanded] = useState(true); // 默认展开
+  const [isExpanded, setIsExpanded] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -85,7 +85,7 @@ export default function AudioPlayer() {
   };
 
   const formatTime = (seconds: number) => {
-    if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
+    if (isNaN(seconds) || !isFinite(seconds) || seconds === Infinity) return '--:--';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -262,10 +262,10 @@ export default function AudioPlayer() {
         </div>
       )}
 
-      {/* 展开状态：显示播放器内容 */}
+      {/* 展开状态 */}
       {isExpanded && (
         <>
-          {/* 收起按钮（红条上右侧半透明） */}
+          {/* 收起按钮 */}
           <div
             onClick={() => setIsExpanded(false)}
             style={{
@@ -306,6 +306,19 @@ export default function AudioPlayer() {
             >
               {getDisplayName()}
             </div>
+            {isLive && currentChannel?.description && (
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: '#666',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {getDisplayDesc()}
+              </div>
+            )}
             {!isLive && (
               <div
                 style={{
@@ -325,7 +338,7 @@ export default function AudioPlayer() {
           <div
             style={{
               position: 'absolute',
-              right: isLive ? '10px' : '80px',
+              right: '10px',
               top: '50%',
               transform: 'translateY(-50%)',
             }}
@@ -344,32 +357,6 @@ export default function AudioPlayer() {
             </button>
           </div>
 
-          {/* 最右侧：收起按钮（直播时显示） */}
-          {isLive && (
-            <div
-              style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-              }}
-            >
-              <button
-                onClick={() => setIsExpanded(false)}
-                style={{
-                  fontSize: '16px',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '5px',
-                  color: '#999',
-                }}
-              >
-                ▼
-              </button>
-            </div>
-          )}
-
           {/* 时间轴（仅重温时显示） */}
           {!isLive && (
             <div
@@ -377,7 +364,7 @@ export default function AudioPlayer() {
                 position: 'absolute',
                 bottom: '6px',
                 left: '10px',
-                right: '120px',
+                right: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
@@ -389,7 +376,7 @@ export default function AudioPlayer() {
               <input
                 type="range"
                 min={0}
-                max={duration || 100}
+                max={duration > 0 ? duration : 100}
                 value={currentTime}
                 onChange={handleSeek}
                 style={{
@@ -398,7 +385,7 @@ export default function AudioPlayer() {
                   cursor: 'pointer',
                 }}
               />
-              <span style={{ fontSize: '11px', color: '#666', minWidth: '35px', textAlign: 'right' }}>
+              <span style={{ fontSize: '11px', color: '#666', minWidth: '40px', textAlign: 'right' }}>
                 {formatTime(duration)}
               </span>
             </div>

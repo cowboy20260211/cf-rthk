@@ -42,11 +42,11 @@ export default function AudioPlayer() {
     const audio = audioRef.current;
 
     const onPlay = () => {
-      console.log('[Player] Audio play event fired, isPlaying:', true);
+      console.log('[Player] play event fired');
       setIsPlaying(true);
     };
     const onPause = () => {
-      console.log('[Player] Audio pause event fired, isPlaying:', false);
+      console.log('[Player] pause event fired');
       setIsPlaying(false);
     };
     const onTimeUpdate = () => {
@@ -57,19 +57,22 @@ export default function AudioPlayer() {
     const onLoadedMetadata = () => {
       if (audio) {
         const dur = audio.duration;
-        console.log('[Player] Metadata loaded, duration:', dur);
+        console.log('[Player] metadata loaded, duration:', dur);
         if (dur && isFinite(dur) && dur > 0) {
           setDuration(dur);
+        } else {
+          // Fallback to episode duration
+          console.log('[Player] No duration from HLS, using episode data');
         }
       }
     };
     const onEnded = () => {
-      console.log('[Player] Playback ended');
+      console.log('[Player] ended');
       setIsPlaying(false);
       setCurrentTime(0);
     };
     const onError = () => {
-      console.log('[Player] Audio error:', audio.error);
+      console.log('[Player] error:', audio.error);
       setIsPlaying(false);
     };
 
@@ -81,7 +84,7 @@ export default function AudioPlayer() {
     audio.addEventListener('error', onError);
 
     return () => {
-      console.log('[Player] Cleaning up audio element');
+      console.log('[Player] cleanup');
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('timeupdate', onTimeUpdate);
@@ -90,7 +93,6 @@ export default function AudioPlayer() {
       audio.removeEventListener('error', onError);
 
       if (hlsRef.current) {
-        console.log('[Player] Destroying HLS instance');
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
@@ -102,25 +104,23 @@ export default function AudioPlayer() {
   // Toggle play/pause
   const handlePlayPause = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio) {
-      console.log('[Player] No audio element');
-      return;
-    }
+    if (!audio) return;
 
-    console.log('[Player] Toggle play/pause clicked, current isPlaying:', isPlaying);
-    console.log('[Player] Audio src:', audio.src || '(empty)');
-    console.log('[Player] Audio paused:', audio.paused);
+    console.log('[Player] Button clicked, current paused:', audio.paused);
+    console.log('[Player] Current isPlaying state:', isPlaying);
 
-    if (isPlaying) {
-      console.log('[Player] Calling audio.pause()');
-      audio.pause();
-    } else {
-      console.log('[Player] Calling audio.play()');
+    if (audio.paused) {
+      console.log('[Player] Calling play()');
       audio.play().then(() => {
-        console.log('[Player] audio.play() succeeded');
+        console.log('[Player] play() success');
+        setIsPlaying(true); // 立即更新状态
       }).catch(err => {
-        console.log('[Player] audio.play() failed:', err);
+        console.log('[Player] play() failed:', err);
       });
+    } else {
+      console.log('[Player] Calling pause()');
+      audio.pause();
+      setIsPlaying(false); // 立即更新状态
     }
   }, [isPlaying]);
 
@@ -129,22 +129,22 @@ export default function AudioPlayer() {
     const audio = audioRef.current;
     if (!audio) return;
     const time = parseFloat(e.target.value);
-    console.log('[Player] Seeking to:', time);
+    console.log('[Player] Seek to:', time);
     audio.currentTime = time;
     setCurrentTime(time);
   }, []);
 
   // Format time
   const formatTime = useCallback((seconds: number) => {
-    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds === Infinity) return '00:00:00';
+    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds === Infinity) return '00:00';
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
-    if (h > 0) return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   }, []);
 
-  // Load media when channel/episode changes
+  // Load media
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -152,31 +152,29 @@ export default function AudioPlayer() {
     let streamUrl = '';
     if (currentEpisode?.audioUrl) {
       streamUrl = currentEpisode.audioUrl;
-      console.log('[Player] Loading episode audio:', streamUrl);
+      console.log('[Player] Episode URL:', streamUrl);
     } else if (currentEpisode) {
       streamUrl = RTHK_LIVE_STREAMS[currentEpisode.channelId as keyof typeof RTHK_LIVE_STREAMS] || RTHK_LIVE_STREAMS.radio1;
-      console.log('[Player] Using fallback stream for episode:', streamUrl);
+      console.log('[Player] Fallback URL:', streamUrl);
     } else if (currentChannel?.streamUrl) {
       streamUrl = currentChannel.streamUrl;
-      console.log('[Player] Loading live channel:', streamUrl);
+      console.log('[Player] Live URL:', streamUrl);
     }
 
-    if (!streamUrl) {
-      console.log('[Player] No stream URL');
-      return;
-    }
+    if (!streamUrl) return;
 
     const episodeId = currentEpisode?.id || `live-${currentChannel?.id || ''}`;
+    
+    // Check if same content
     if (lastEpisodeIdRef.current === episodeId && audio.src === streamUrl) {
-      console.log('[Player] Same episode, skipping reload');
+      console.log('[Player] Same content, skip reload');
       return;
     }
     lastEpisodeIdRef.current = episodeId;
-    console.log('[Player] New episode ID:', episodeId);
 
-    // Destroy old HLS
+    console.log('[Player] Loading new content:', episodeId);
+
     if (hlsRef.current) {
-      console.log('[Player] Destroying old HLS');
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
@@ -191,13 +189,17 @@ export default function AudioPlayer() {
       const start = currentEpisode.startTime || 0;
       audio.currentTime = start;
       setCurrentTime(start);
-      // Don't set duration from episode data - get from HLS
-      setDuration(0);
+      // Use episode duration as fallback
+      if (currentEpisode.duration) {
+        setDuration(currentEpisode.duration);
+      } else {
+        setDuration(3600);
+      }
     }
 
-    // Load stream
+    // HLS or native
     if (streamUrl.includes('.m3u8') && Hls.isSupported()) {
-      console.log('[Player] Loading HLS stream');
+      console.log('[Player] Loading HLS');
       const hls = new Hls(isLive ? {} : { startPosition: currentEpisode?.startTime || 0 });
       hlsRef.current = hls;
       hls.attachMedia(audio);
@@ -208,9 +210,8 @@ export default function AudioPlayer() {
         if (!isLive && currentEpisode) {
           audio.currentTime = currentEpisode.startTime || 0;
         }
-        console.log('[Player] Calling audio.play() after manifest');
         audio.play().then(() => {
-          console.log('[Player] Auto-play succeeded');
+          console.log('[Player] Auto-play success');
         }).catch(err => {
           console.log('[Player] Auto-play failed:', err);
         });
@@ -218,33 +219,29 @@ export default function AudioPlayer() {
       
       hls.on(Hls.Events.ERROR, (_e, data) => {
         console.log('[Player] HLS error:', data.type, data.fatal);
-        if (data.fatal) {
-          console.log('[Player] Fatal HLS error, restarting');
-          hls.startLoad();
-        }
+        if (data.fatal) hls.startLoad();
       });
     } else {
-      console.log('[Player] Using native audio (non-HLS)');
+      console.log('[Player] Native audio');
       audio.src = streamUrl;
       audio.load();
       audio.oncanplay = () => {
-        console.log('[Player] Native audio ready');
         if (!isLive && currentEpisode) {
           audio.currentTime = currentEpisode.startTime || 0;
         }
         audio.play().then(() => {
-          console.log('[Player] Native play succeeded');
+          console.log('[Player] Native auto-play success');
         }).catch(err => {
-          console.log('[Player] Native play failed:', err);
+          console.log('[Player] Native auto-play failed:', err);
         });
       };
     }
   }, [currentEpisode, currentChannel]);
 
-  // Reset when no playback
+  // Reset
   useEffect(() => {
     if (!currentChannel && !currentEpisode) {
-      console.log('[Player] No channel/episode, resetting');
+      console.log('[Player] Nothing playing');
       setIsPlaying(false);
       setCurrentTime(0);
       setDuration(0);
@@ -255,7 +252,6 @@ export default function AudioPlayer() {
 
   return (
     <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: isExpanded ? 'white' : 'transparent', zIndex: 50, height: isExpanded ? (isLive ? '50px' : '80px') : '5px' }}>
-      {/* Collapsed */}
       {!isExpanded && (
         <div style={{ position: 'relative', height: '5px' }}>
           <div style={{ height: '5px', background: '#d40000', width: '100%' }} />
@@ -265,7 +261,6 @@ export default function AudioPlayer() {
         </div>
       )}
 
-      {/* Expanded */}
       {isExpanded && (
         <>
           <div onClick={() => setIsExpanded(false)} style={{ position: 'absolute', top: '-20px', right: '10px', width: '60px', height: '25px', background: 'rgba(212, 0, 0, 0.6)', borderRadius: '15px 15px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 51 }}>
@@ -273,23 +268,23 @@ export default function AudioPlayer() {
           </div>
 
           <div style={{ position: 'absolute', left: '10px', top: isLive ? '12px' : '8px', width: 'calc(100% - 50px)' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentEpisode?.title || currentChannel?.name || '未知频道'}</div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentEpisode?.title || currentChannel?.name || '未知'}</div>
             <div style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentEpisode?.publishDate || currentChannel?.description || ''}</div>
           </div>
 
-          {/* Play button - 25px red circle with shadow */}
+          {/* Play button - 25px red circle */}
           <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
             <button onClick={handlePlayPause} style={{ width: '25px', height: '25px', borderRadius: '50%', background: '#d40000', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
               <span style={{ color: 'white', fontSize: '10px' }}>{isPlaying ? '⏸' : '▶'}</span>
             </button>
           </div>
 
-          {/* Timeline - duration from HLS */}
+          {/* Timeline */}
           {!isLive && (
             <div style={{ position: 'absolute', bottom: '6px', left: '10px', right: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '11px', color: '#666', minWidth: '50px' }}>{formatTime(currentTime)}</span>
+              <span style={{ fontSize: '11px', color: '#666', minWidth: '40px' }}>{formatTime(currentTime)}</span>
               <input type="range" min={0} max={Math.max(duration, 1)} value={currentTime} onChange={handleSeek} style={{ flex: 1, height: '4px', cursor: 'pointer' }} />
-              <span style={{ fontSize: '11px', color: '#666', minWidth: '50px', textAlign: 'right' }}>{formatTime(duration)}</span>
+              <span style={{ fontSize: '11px', color: '#666', minWidth: '45px', textAlign: 'right' }}>{formatTime(duration)}</span>
             </div>
           )}
         </>

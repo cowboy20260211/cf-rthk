@@ -56,6 +56,8 @@ export default function AudioPlayer() {
     audioRef.current.crossOrigin = 'anonymous';
     audioRef.current.volume = volume;
     audioRef.current.muted = false;
+    audioRef.current.addEventListener('play', () => console.log('Audio play event'));
+    audioRef.current.addEventListener('error', e => console.log('Audio error:', e));
   }, []);
 
   // Sync volume when it changes
@@ -63,7 +65,6 @@ export default function AudioPlayer() {
     if (audioRef.current) {
       audioRef.current.volume = volume;
       audioRef.current.muted = false;
-      console.log('Volume set to:', volume);
     }
   }, [volume]);
 
@@ -114,36 +115,28 @@ export default function AudioPlayer() {
 
       if (streamUrl.includes('.m3u8')) {
         if (Hls.isSupported()) {
-          // HLS.js with CORS support - no manual Origin/Referer headers allowed
-          // Browser handles CORS automatically
+          const oldHls = hlsRef.current;
+          if (oldHls) {
+            (oldHls as Hls).destroy();
+          }
           const hls = new Hls();
           hlsRef.current = hls;
+          (hls as any).media = audio; // Direct media assignment
 
           hls.loadSource(streamUrl);
-          hls.attachMedia(audio);
 
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             const duration = hls.media?.duration;
             if (duration && isFinite(duration) && duration > 0) {
               setHlsDuration(duration);
-              console.log('HLS duration from manifest:', duration);
             }
-            // Ensure audio is not muted and volume is set
             audio.muted = false;
             audio.volume = volume;
-            console.log('Audio volume set to:', audio.volume, 'muted:', audio.muted);
 
-            audio
-              .play()
-              .then(() => {
-                console.log('Play started successfully');
-                setStatus('播放中');
-                setErrorMsg('');
-              })
-              .catch(err => {
-                console.log('Play failed:', err);
-                setStatus('點擊播放');
-              });
+            audio.play().catch(err => {
+              console.log('Play failed:', err);
+              setStatus('點擊播放');
+            });
           });
 
           hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -152,7 +145,6 @@ export default function AudioPlayer() {
                 case Hls.ErrorTypes.NETWORK_ERROR:
                   setErrorMsg('網絡錯誤，請檢查連線 (可能需要香港IP)');
                   setStatus('網絡錯誤');
-                  // Try to recover
                   hls.startLoad();
                   break;
                 case Hls.ErrorTypes.MEDIA_ERROR:
@@ -160,35 +152,30 @@ export default function AudioPlayer() {
                   setStatus('媒體錯誤');
                   break;
                 default:
-                  setErrorMsg(`加載失敗: ${data.type}`);
+                  setErrorMsg('加載失敗');
                   setStatus('加載錯誤');
                   break;
               }
             }
           });
         } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+          // Native HLS support (Safari)
           audio.src = streamUrl;
-          audio.load();
-          audio.oncanplay = () => {
-            audio
-              .play()
-              .then(() => {
-                setStatus('播放中');
-              })
-              .catch(() => setStatus('點擊播放'));
-          };
+          audio.muted = false;
+          audio.volume = volume;
+          audio.play().catch(() => setStatus('點擊播放'));
+        } else {
+          // Fallback: try direct URL
+          audio.src = streamUrl;
+          audio.muted = false;
+          audio.volume = volume;
+          audio.play().catch(() => setStatus('點擊播放'));
         }
       } else {
         audio.src = streamUrl;
-        audio.load();
-        audio.oncanplay = () => {
-          audio
-            .play()
-            .then(() => {
-              setStatus('播放中');
-            })
-            .catch(() => setStatus('點擊播放'));
-        };
+        audio.muted = false;
+        audio.volume = volume;
+        audio.play().catch(() => setStatus('點擊播放'));
       }
 
       audio.onwaiting = () => setStatus('緩衝中...');

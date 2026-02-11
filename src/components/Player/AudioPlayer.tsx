@@ -20,7 +20,7 @@ export default function AudioPlayer() {
     currentChannel: { id: string; name: string; description?: string; streamUrl?: string } | null;
     currentEpisode: Episode | null;
   };
-  
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -33,7 +33,7 @@ export default function AudioPlayer() {
   // Create audio element
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
+
     audioRef.current = new Audio();
     audioRef.current.crossOrigin = 'anonymous';
     audioRef.current.volume = 1;
@@ -116,7 +116,8 @@ export default function AudioPlayer() {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
-    if (h > 0) return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    if (h > 0)
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }, []);
 
@@ -129,7 +130,9 @@ export default function AudioPlayer() {
     if (currentEpisode?.audioUrl) {
       streamUrl = currentEpisode.audioUrl;
     } else if (currentEpisode) {
-      streamUrl = RTHK_LIVE_STREAMS[currentEpisode.channelId as keyof typeof RTHK_LIVE_STREAMS] || RTHK_LIVE_STREAMS.radio1;
+      streamUrl =
+        RTHK_LIVE_STREAMS[currentEpisode.channelId as keyof typeof RTHK_LIVE_STREAMS] ||
+        RTHK_LIVE_STREAMS.radio1;
     } else if (currentChannel?.streamUrl) {
       streamUrl = currentChannel.streamUrl;
     }
@@ -147,7 +150,7 @@ export default function AudioPlayer() {
     }
 
     audio.pause();
-    
+
     if (isLive) {
       audio.currentTime = 0;
       setCurrentTime(0);
@@ -165,14 +168,14 @@ export default function AudioPlayer() {
       hlsRef.current = hls;
       hls.attachMedia(audio);
       hls.loadSource(streamUrl);
-      
+
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (!isLive && currentEpisode) {
           audio.currentTime = currentEpisode.startTime || 0;
         }
         audio.play().catch(() => {});
       });
-      
+
       hls.on(Hls.Events.ERROR, (_e, data) => {
         if (data.fatal) hls.startLoad();
       });
@@ -200,12 +203,38 @@ export default function AudioPlayer() {
   if (!currentChannel && !currentEpisode) return null;
 
   return (
-    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: isExpanded ? 'white' : 'transparent', zIndex: 50, height: isExpanded ? (isLive ? '50px' : '80px') : '5px' }}>
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: isExpanded ? 'white' : 'transparent',
+        zIndex: 50,
+        height: isExpanded ? (isLive ? '50px' : '80px') : '5px',
+      }}
+    >
       {/* Collapsed */}
       {!isExpanded && (
         <div style={{ position: 'relative', height: '5px' }}>
           <div style={{ height: '5px', background: '#d40000', width: '100%' }} />
-          <div onClick={() => setIsExpanded(true)} style={{ position: 'absolute', right: '10px', top: '-22px', width: '40px', height: '25px', background: 'rgba(212, 0, 0, 0.6)', borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 51 }}>
+          <div
+            onClick={() => setIsExpanded(true)}
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '-22px',
+              width: '40px',
+              height: '25px',
+              background: 'rgba(212, 0, 0, 0.6)',
+              borderRadius: '8px 8px 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 51,
+            }}
+          >
             <span style={{ color: 'white', fontSize: '10px' }}>▲</span>
           </div>
         </div>
@@ -214,28 +243,115 @@ export default function AudioPlayer() {
       {/* Expanded */}
       {isExpanded && (
         <>
-          <div onClick={() => setIsExpanded(false)} style={{ position: 'absolute', top: '-20px', right: '10px', width: '60px', height: '25px', background: 'rgba(212, 0, 0, 0.6)', borderRadius: '15px 15px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 51 }}>
+          <div
+            onClick={() => setIsExpanded(false)}
+            style={{
+              position: 'absolute',
+              top: '-20px',
+              right: '10px',
+              width: '60px',
+              height: '25px',
+              background: 'rgba(212, 0, 0, 0.6)',
+              borderRadius: '15px 15px 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 51,
+            }}
+          >
             <span style={{ color: 'white', fontSize: '12px' }}>▼</span>
           </div>
 
-          <div style={{ position: 'absolute', left: '10px', top: isLive ? '12px' : '8px', width: 'calc(100% - 50px)' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentEpisode?.title || currentChannel?.name || '未知频道'}</div>
-            <div style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentEpisode?.publishDate || currentChannel?.description || ''}</div>
+          <div
+            style={{
+              position: 'absolute',
+              left: '10px',
+              top: isLive ? '12px' : '8px',
+              width: 'calc(100% - 50px)',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {currentEpisode?.title || currentChannel?.name || '未知频道'}
+            </div>
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#666',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {currentEpisode?.publishDate || currentChannel?.description || ''}
+            </div>
           </div>
 
           {/* Play button */}
-          <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
-            <button onClick={handlePlayPause} style={{ width: 25px, height: 25px, borderRadius: '50%', background: '#d40000', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+          <div
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+            }}
+          >
+            <button
+              onClick={handlePlayPause}
+              style={{
+                width: '25px',
+                height: '25px',
+                borderRadius: '50%',
+                background: '#d40000',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+              }}
+            >
               <span style={{ color: 'white', fontSize: '10px' }}>{isPlaying ? '⏸' : '▶'}</span>
             </button>
           </div>
 
           {/* Timeline */}
           {!isLive && (
-            <div style={{ position: 'absolute', bottom: '6px', left: '10px', right: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '11px', color: '#666', minWidth: '50px' }}>{formatTime(currentTime)}</span>
-              <input type="range" min={0} max={Math.max(duration, 1)} value={currentTime} onChange={handleSeek} style={{ flex: 1, height: '4px', cursor: 'pointer' }} />
-              <span style={{ fontSize: '11px', color: '#666', minWidth: '50px', textAlign: 'right' }}>{formatTime(duration)}</span>
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '6px',
+                left: '10px',
+                right: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <span style={{ fontSize: '11px', color: '#666', minWidth: '50px' }}>
+                {formatTime(currentTime)}
+              </span>
+              <input
+                type='range'
+                min={0}
+                max={Math.max(duration, 1)}
+                value={currentTime}
+                onChange={handleSeek}
+                style={{ flex: 1, height: '4px', cursor: 'pointer' }}
+              />
+              <span
+                style={{ fontSize: '11px', color: '#666', minWidth: '50px', textAlign: 'right' }}
+              >
+                {formatTime(duration)}
+              </span>
             </div>
           )}
         </>

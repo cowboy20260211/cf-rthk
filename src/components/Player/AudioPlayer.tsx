@@ -10,6 +10,9 @@ export default function AudioPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const lastEpisodeIdRef = useRef<string>('');
 
   // Initialize audio element
@@ -18,6 +21,21 @@ export default function AudioPlayer() {
     audioRef.current.crossOrigin = 'anonymous';
     audioRef.current.volume = 1;
     audioRef.current.muted = false;
+
+    // Event listeners
+    audioRef.current.addEventListener('play', () => setIsPlaying(true));
+    audioRef.current.addEventListener('pause', () => setIsPlaying(false));
+    audioRef.current.addEventListener('timeupdate', () => {
+      if (audioRef.current) {
+        setCurrentTime(audioRef.current.currentTime);
+      }
+    });
+    audioRef.current.addEventListener('loadedmetadata', () => {
+      if (audioRef.current) {
+        setDuration(audioRef.current.duration);
+      }
+    });
+    audioRef.current.addEventListener('ended', () => setIsPlaying(false));
 
     return () => {
       if (hlsRef.current) {
@@ -39,6 +57,25 @@ export default function AudioPlayer() {
     return currentChannel?.streamUrl || '';
   };
 
+  const getDisplayName = () => {
+    if (currentEpisode) return currentEpisode.title;
+    return currentChannel?.name || '未知频道';
+  };
+
+  const getDisplayDesc = () => {
+    if (currentEpisode) return currentEpisode.publishDate || '';
+    return currentChannel?.description || '';
+  };
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(() => {});
+    }
+  };
+
   const toggleFavorite = () => {
     if (!currentEpisode) return;
     
@@ -54,6 +91,21 @@ export default function AudioPlayer() {
         channel: currentChannel?.name || '第一台',
       });
     }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   useEffect(() => {
@@ -195,8 +247,11 @@ export default function AudioPlayer() {
         bottom: 0,
         left: 0,
         right: 0,
-        background: 'transparent',
+        background: 'white',
+        borderTop: '2px solid #d40000',
         zIndex: 50,
+        transition: 'height 0.3s ease',
+        height: isExpanded ? '80px' : '60px',
       }}
     >
       {/* 展开/收起按钮 */}
@@ -204,11 +259,11 @@ export default function AudioPlayer() {
         onClick={() => setIsExpanded(!isExpanded)}
         style={{
           position: 'absolute',
-          top: isExpanded ? '-15px' : '-25px',
+          top: '-20px',
           left: '50%',
           transform: 'translateX(-50%)',
           width: '60px',
-          height: isExpanded ? '30px' : '50px',
+          height: '25px',
           background: '#d40000',
           borderRadius: '15px 15px 0 0',
           display: 'flex',
@@ -216,7 +271,6 @@ export default function AudioPlayer() {
           justifyContent: 'center',
           cursor: 'pointer',
           zIndex: 51,
-          transition: 'all 0.3s ease',
         }}
       >
         <span style={{ color: 'white', fontSize: '12px' }}>
@@ -224,23 +278,115 @@ export default function AudioPlayer() {
         </span>
       </div>
 
-      {/* 展开状态：只显示收藏按钮 */}
+      {/* 左侧：播放信息 */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '10px',
+          top: isExpanded ? '8px' : '10px',
+          width: 'calc(100% - 180px)',
+        }}
+      >
+        <div
+          style={{
+            fontSize: '14px',
+            fontWeight: 'bold',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {getDisplayName()}
+        </div>
+        <div
+          style={{
+            fontSize: '12px',
+            color: '#666',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {getDisplayDesc()}
+        </div>
+      </div>
+
+      {/* 中间：播放按钮 */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}
+      >
+        <button
+          onClick={togglePlay}
+          style={{
+            fontSize: '24px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '5px',
+          }}
+        >
+          {isPlaying ? '⏸' : '▶'}
+        </button>
+      </div>
+
+      {/* 时间轴 */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: isExpanded ? '10px' : '6px',
+          left: '10px',
+          right: '80px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}
+      >
+        <span style={{ fontSize: '11px', color: '#666', minWidth: '35px' }}>
+          {formatTime(currentTime)}
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={duration || 100}
+          value={currentTime}
+          onChange={handleSeek}
+          style={{
+            flex: 1,
+            height: '4px',
+            cursor: 'pointer',
+          }}
+        />
+        <span style={{ fontSize: '11px', color: '#666', minWidth: '35px', textAlign: 'right' }}>
+          {formatTime(duration)}
+        </span>
+      </div>
+
+      {/* 右侧：收藏按钮（展开时显示） */}
       {isExpanded && (
         <div
           style={{
-            background: 'white',
-            borderTop: '2px solid #d40000',
-            padding: '20px',
-            textAlign: 'center',
+            position: 'absolute',
+            right: '10px',
+            top: '50%',
+            transform: 'translateY(-50%)',
           }}
         >
           <button
             onClick={toggleFavorite}
             style={{
-              fontSize: '32px',
+              fontSize: '24px',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
+              padding: '5px',
             }}
           >
             {currentEpisode && favorites.some(f => f.programId === currentEpisode.programId) 
@@ -248,17 +394,6 @@ export default function AudioPlayer() {
               : '☆'}
           </button>
         </div>
-      )}
-
-      {/* 收起状态：只显示细条 */}
-      {!isExpanded && (
-        <div
-          style={{
-            height: '8px',
-            background: '#d40000',
-            width: '100%',
-          }}
-        />
       )}
 
       <audio ref={audioRef} style={{ display: 'none' }} />

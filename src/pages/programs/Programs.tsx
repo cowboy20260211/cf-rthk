@@ -12,10 +12,16 @@ const channels = [
 export default function Programs() {
   const [selectedChannel, setSelectedChannel] = useState<string>('radio2');
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'popular' | 'all'>('popular');
   const { favorites, addFavorite, removeFavorite } = useFavorite();
 
   const allPrograms = rthkApi.getProgramsByChannel(selectedChannel);
-  const filteredPrograms = allPrograms.filter(
+
+  // Filter popular programs (first 4) or all programs
+  const popularPrograms = allPrograms.slice(0, 4);
+  const displayedPrograms = viewMode === 'popular' ? popularPrograms : allPrograms;
+
+  const filteredPrograms = displayedPrograms.filter(
     (p: Program) =>
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -65,6 +71,30 @@ export default function Programs() {
       </div>
 
       <div className='flex gap-2 mb-4 overflow-x-auto pb-2'>
+        {/* 热门/全部 切换 */}
+        <div className='flex gap-1 mr-2'>
+          <button
+            onClick={() => setViewMode('popular')}
+            className={`px-3 py-2 rounded-full whitespace-nowrap transition-colors text-sm ${
+              viewMode === 'popular'
+                ? 'bg-rthk-red text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            热门
+          </button>
+          <button
+            onClick={() => setViewMode('all')}
+            className={`px-3 py-2 rounded-full whitespace-nowrap transition-colors text-sm ${
+              viewMode === 'all'
+                ? 'bg-rthk-red text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            全部
+          </button>
+        </div>
+        {/* 频道选择 */}
         {channels.map(channel => (
           <button
             key={channel.id}

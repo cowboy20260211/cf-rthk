@@ -373,7 +373,7 @@ export default function AudioPlayer() {
         borderTop: '2px solid #d40000',
         zIndex: 50,
         transition: 'all 0.3s ease',
-        maxHeight: isExpanded ? '300px' : '70px',
+        maxHeight: isExpanded ? '280px' : '20px',
         overflow: 'hidden',
       }}
     >
@@ -399,38 +399,31 @@ export default function AudioPlayer() {
         <span style={{ color: 'white', fontSize: '12px' }}>{isExpanded ? '▼' : '▲'}</span>
       </div>
 
-      <div
-        style={{
-          maxWidth: '600px',
-          margin: '0 auto',
-          padding: isExpanded ? '20px' : '12px 16px 12px',
-        }}
-      >
-        {/* 收起状态：只显示标题和播放按钮 */}
-        {!isExpanded && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div
-                style={{
-                  fontWeight: 'bold',
-                  fontSize: '14px',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {getDisplayName()}
-              </div>
-              <div style={{ fontSize: '12px', color: '#666' }}>{status}</div>
-            </div>
+      {/* 展开状态：显示完整播放器 */}
+      {isExpanded && (
+        <div
+          style={{
+            maxWidth: '600px',
+            margin: '0 auto',
+            padding: '20px',
+          }}
+        >
+          <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{getDisplayName()}</div>
+            <div style={{ fontSize: '12px', color: '#666' }}>{getDisplayDesc()}</div>
+            <div style={{ fontSize: '12px', color: '#d40000', marginTop: '4px' }}>{status}</div>
+            {errorMsg && (
+              <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>{errorMsg}</div>
+            )}
+          </div>
+
+          {/* 播放按钮 */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
             <button
-              onClick={e => {
-                e.stopPropagation();
-                handlePlay();
-              }}
+              onClick={handlePlay}
               style={{
-                width: '44px',
-                height: '44px',
+                width: '56px',
+                height: '56px',
                 borderRadius: '50%',
                 background: '#d40000',
                 color: 'white',
@@ -439,75 +432,38 @@ export default function AudioPlayer() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '18px',
-                flexShrink: 0,
+                fontSize: '24px',
               }}
             >
               {isPaused ? '▶' : '⏸'}
             </button>
           </div>
-        )}
 
-        {/* 展开状态：显示完整播放器 */}
-        {isExpanded && (
-          <div>
-            <div style={{ marginBottom: '16px', textAlign: 'center' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{getDisplayName()}</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>{getDisplayDesc()}</div>
-              <div style={{ fontSize: '12px', color: '#d40000', marginTop: '4px' }}>{status}</div>
-              {errorMsg && (
-                <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>{errorMsg}</div>
-              )}
-            </div>
-
-            {/* 播放按钮 */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-              <button
-                onClick={handlePlay}
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: '#d40000',
-                  color: 'white',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                }}
+          {/* 进度条 */}
+          {currentEpisode && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: '#666', minWidth: '40px' }}>
+                {formatTime(startOffset)}
+              </span>
+              <input
+                type='range'
+                min='0'
+                max={hlsDuration || currentEpisode.duration || 3600}
+                value={startOffset}
+                onChange={handleTimeChange}
+                onMouseUp={handleTimeChangeEnd}
+                onTouchEnd={handleTimeChangeEnd}
+                style={{ flex: 1, cursor: 'pointer' }}
+              />
+              <span
+                style={{ fontSize: '12px', color: '#666', minWidth: '40px', textAlign: 'right' }}
               >
-                {isPaused ? '▶' : '⏸'}
-              </button>
+                {formatTime(hlsDuration || currentEpisode.duration || 3600)}
+              </span>
             </div>
-
-            {/* 进度条 */}
-            {currentEpisode && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12px', color: '#666', minWidth: '40px' }}>
-                  {formatTime(startOffset)}
-                </span>
-                <input
-                  type='range'
-                  min='0'
-                  max={hlsDuration || currentEpisode.duration || 3600}
-                  value={startOffset}
-                  onChange={handleTimeChange}
-                  onMouseUp={handleTimeChangeEnd}
-                  onTouchEnd={handleTimeChangeEnd}
-                  style={{ flex: 1, cursor: 'pointer' }}
-                />
-                <span
-                  style={{ fontSize: '12px', color: '#666', minWidth: '40px', textAlign: 'right' }}
-                >
-                  {formatTime(hlsDuration || currentEpisode.duration || 3600)}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       <audio ref={audioRef} style={{ display: 'none' }} />
     </div>

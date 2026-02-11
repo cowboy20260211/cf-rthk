@@ -2,12 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { usePlayer } from '../../stores/PlayerContext';
 import { useFavorite } from '../../stores/FavoriteContext';
-import {
-  rthkApi,
-  fetchEpisodesWithActualDuration,
-  type Program,
-  type Episode,
-} from '../../services/rthkApi';
+import { rthkApi, fetchEpisodesFromRTHK, type Program, type Episode } from '../../services/rthkApi';
 
 export default function ProgramDetail() {
   const { channel, id } = useParams<{ channel: string; id: string }>();
@@ -64,8 +59,8 @@ export default function ProgramDetail() {
         const result = await rthkApi.getProgramDetail(channel, id);
 
         if (result) {
-          // Try to fetch actual duration from m3u8
-          const { episodes } = await fetchEpisodesWithActualDuration(channel, id);
+          // Fetch episodes from RTHK
+          const episodes = await fetchEpisodesFromRTHK(channel, id);
 
           const combinedResult = {
             ...result,

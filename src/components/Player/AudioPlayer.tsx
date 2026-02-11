@@ -13,7 +13,6 @@ interface Episode {
   duration?: number;
   audioUrl?: string;
   startTime?: number;
-  endTime?: number;
 }
 
 export default function AudioPlayer() {
@@ -31,62 +30,78 @@ export default function AudioPlayer() {
   const lastEpisodeIdRef = useRef<string>('');
   const isLive = !currentEpisode && currentChannel;
 
+  // Create audio element
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     audioRef.current = new Audio();
     audioRef.current.crossOrigin = 'anonymous';
     audioRef.current.volume = 1;
 
     const audio = audioRef.current;
-    let isMounted = true;
 
-    const handlePlay = () => { if (isMounted) setIsPlaying(true); };
-    const handlePause = () => { if (isMounted) setIsPlaying(false); };
-    const handleTimeUpdate = () => { 
-      if (isMounted && audio && !audio.paused) { 
-        setCurrentTime(audio.currentTime); 
+    // Event handlers
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onTimeUpdate = () => {
+      if (audio && !audio.paused) {
+        setCurrentTime(audio.currentTime);
       }
     };
-    const handleLoadedMetadata = () => { 
-      if (isMounted && audio) { 
-        const dur = audio.duration; 
-        if (dur && isFinite(dur) && dur > 0) setDuration(dur); 
-      } 
+    const onLoadedMetadata = () => {
+      if (audio) {
+        const dur = audio.duration;
+        if (dur && isFinite(dur) && dur > 0) {
+          setDuration(dur);
+        }
+      }
     };
-    const handleEnded = () => { if (isMounted) { setIsPlaying(false); setCurrentTime(0); } };
-    const handleError = () => { if (isMounted) { console.log('Audio error:', audio.error); setIsPlaying(false); } };
+    const onEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+    const onError = () => {
+      console.log('Audio error:', audio.error);
+      setIsPlaying(false);
+    };
 
-    audio.addEventListener('play', handlePlay);
-    audio.addEventListener('pause', handlePause);
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('timeupdate', onTimeUpdate);
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
 
     return () => {
-      isMounted = false;
-      audio.removeEventListener('play', handlePlay);
-      audio.removeEventListener('pause', handlePause);
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
+      audio.removeEventListener('timeupdate', onTimeUpdate);
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
 
-      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
       audio.pause();
       audio.src = '';
     };
   }, []);
 
-  const togglePlay = useCallback(() => {
+  // Toggle play/pause
+  const handlePlayPause = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
+
     if (isPlaying) {
       audio.pause();
     } else {
-      audio.play().catch(err => console.log('Play failed:', err));
+      audio.play().catch(err => console.log('Play error:', err));
     }
   }, [isPlaying]);
 
+  // Seek
   const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -95,93 +110,98 @@ export default function AudioPlayer() {
     setCurrentTime(time);
   }, []);
 
+  // Format time
   const formatTime = useCallback((seconds: number) => {
     if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds === Infinity) return '00:00:00';
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }, []);
 
+  // Load media when channel/episode changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const streamUrl = currentEpisode?.audioUrl || 
-      (currentEpisode ? RTHK_LIVE_STREAMS[currentEpisode.channelId as keyof typeof RTHK_LIVE_STREAMS] || RTHK_LIVE_STREAMS.radio1 : '') ||
-      currentChannel?.streamUrl || '';
+    let streamUrl = '';
+    if (currentEpisode?.audioUrl) {
+      streamUrl = currentEpisode.audioUrl;
+    } else if (currentEpisode) {
+      streamUrl = RTHK_LIVE_STREAMS[currentEpisode.channelId as keyof typeof RTHK_LIVE_STREAMS] || RTHK_LIVE_STREAMS.radio1;
+    } else if (currentChannel?.streamUrl) {
+      streamUrl = currentChannel.streamUrl;
+    }
 
     if (!streamUrl) return;
 
-    const isEpisode = !!currentEpisode;
-    const isChannel = !currentEpisode && !!currentChannel;
+    const episodeId = currentEpisode?.id || `live-${currentChannel?.id || ''}`;
+    if (lastEpisodeIdRef.current === episodeId && audio.src === streamUrl) return;
+    lastEpisodeIdRef.current = episodeId;
 
-    if (isChannel) {
-      const lastId = lastEpisodeIdRef.current;
-      const currentId = `live-${currentChannel.id}`;
-      if (lastId === currentId) return;
-      lastEpisodeIdRef.current = currentId;
+    // Destroy old HLS
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
 
-      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
-      audio.pause();
+    audio.pause();
+    
+    if (isLive) {
       audio.currentTime = 0;
       setCurrentTime(0);
       setDuration(0);
-
-      if (streamUrl.includes('.m3u8') && Hls.isSupported()) {
-        const hls = new Hls();
-        hlsRef.current = hls;
-        hls.attachMedia(audio);
-        hls.loadSource(streamUrl);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => { audio.muted = false; audio.volume = 1; audio.play().catch(() => {}); });
-        hls.on(Hls.Events.ERROR, (_e, data) => { if (data.fatal) hls.startLoad(); });
-      } else {
-        audio.src = streamUrl;
-        audio.muted = false;
-        audio.volume = 1;
-        audio.play().catch(() => {});
-      }
-    } else if (isEpisode && currentEpisode) {
-      const lastId = lastEpisodeIdRef.current;
-      const currentId = currentEpisode.id;
-      if (lastId === currentId) return;
-      lastEpisodeIdRef.current = currentId;
-
-      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
-      audio.pause();
+    } else if (currentEpisode) {
       const start = currentEpisode.startTime || 0;
       audio.currentTime = start;
       setCurrentTime(start);
       setDuration(currentEpisode.duration || 0);
+    }
 
-      if (streamUrl.includes('.m3u8') && Hls.isSupported()) {
-        const hls = new Hls({ startPosition: start });
-        hlsRef.current = hls;
-        hls.attachMedia(audio);
-        hls.loadSource(streamUrl);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => { 
-          const dur = audio.duration; 
-          if (dur && isFinite(dur) && dur > 0) setDuration(dur); 
-          audio.currentTime = start; 
-          audio.play().catch(() => {}); 
-        });
-        hls.on(Hls.Events.ERROR, (_e, data) => { if (data.fatal) hls.startLoad(); });
-      } else {
-        audio.src = streamUrl;
-        audio.crossOrigin = 'anonymous';
-        audio.load();
-        audio.oncanplay = () => { audio.currentTime = start; audio.play().catch(() => {}); };
-      }
+    // Load stream
+    if (streamUrl.includes('.m3u8') && Hls.isSupported()) {
+      const hls = new Hls(isLive ? {} : { startPosition: currentEpisode?.startTime || 0 });
+      hlsRef.current = hls;
+      hls.attachMedia(audio);
+      hls.loadSource(streamUrl);
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (!isLive && currentEpisode) {
+          audio.currentTime = currentEpisode.startTime || 0;
+        }
+        audio.play().catch(() => {});
+      });
+      
+      hls.on(Hls.Events.ERROR, (_e, data) => {
+        if (data.fatal) hls.startLoad();
+      });
+    } else {
+      audio.src = streamUrl;
+      audio.load();
+      audio.oncanplay = () => {
+        if (!isLive && currentEpisode) {
+          audio.currentTime = currentEpisode.startTime || 0;
+        }
+        audio.play().catch(() => {});
+      };
     }
   }, [currentEpisode, currentChannel]);
+
+  // Reset when no playback
+  useEffect(() => {
+    if (!currentChannel && !currentEpisode) {
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+    }
+  }, [currentChannel, currentEpisode]);
 
   if (!currentChannel && !currentEpisode) return null;
 
   return (
     <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: isExpanded ? 'white' : 'transparent', zIndex: 50, height: isExpanded ? (isLive ? '50px' : '80px') : '5px' }}>
+      {/* Collapsed */}
       {!isExpanded && (
         <div style={{ position: 'relative', height: '5px' }}>
           <div style={{ height: '5px', background: '#d40000', width: '100%' }} />
@@ -191,6 +211,7 @@ export default function AudioPlayer() {
         </div>
       )}
 
+      {/* Expanded */}
       {isExpanded && (
         <>
           <div onClick={() => setIsExpanded(false)} style={{ position: 'absolute', top: '-20px', right: '10px', width: '60px', height: '25px', background: 'rgba(212, 0, 0, 0.6)', borderRadius: '15px 15px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 51 }}>
@@ -202,27 +223,14 @@ export default function AudioPlayer() {
             <div style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentEpisode?.publishDate || currentChannel?.description || ''}</div>
           </div>
 
-          {/* 红底圆形播放按钮 20px */}
+          {/* Play button */}
           <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
-            <button 
-              onClick={togglePlay}
-              style={{
-                width: '20px',
-                height: '20px',
-                borderRadius: '50%',
-                background: '#d40000',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-              }}
-            >
+            <button onClick={handlePlayPause} style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#d40000', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
               <span style={{ color: 'white', fontSize: '10px' }}>{isPlaying ? '⏸' : '▶'}</span>
             </button>
           </div>
 
+          {/* Timeline */}
           {!isLive && (
             <div style={{ position: 'absolute', bottom: '6px', left: '10px', right: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '11px', color: '#666', minWidth: '50px' }}>{formatTime(currentTime)}</span>

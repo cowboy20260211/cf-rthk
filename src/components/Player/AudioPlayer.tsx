@@ -225,7 +225,7 @@ export default function AudioPlayer() {
 
           {/* Play button */}
           <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
-            <button onClick={handlePlayPause} style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#d40000', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+            <button onClick={handlePlayPause} style={{ width: 25px, height: 25px, borderRadius: '50%', background: '#d40000', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
               <span style={{ color: 'white', fontSize: '10px' }}>{isPlaying ? '⏸' : '▶'}</span>
             </button>
           </div>

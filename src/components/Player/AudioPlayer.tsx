@@ -22,7 +22,6 @@ export default function AudioPlayer() {
     audioRef.current.volume = 1;
     audioRef.current.muted = false;
 
-    // Event listeners
     audioRef.current.addEventListener('play', () => setIsPlaying(true));
     audioRef.current.addEventListener('pause', () => setIsPlaying(false));
     audioRef.current.addEventListener('timeupdate', () => {
@@ -247,153 +246,162 @@ export default function AudioPlayer() {
         bottom: 0,
         left: 0,
         right: 0,
-        background: 'white',
-        borderTop: '2px solid #d40000',
+        background: isExpanded ? 'white' : 'transparent',
+        borderTop: isExpanded ? '2px solid #d40000' : 'none',
         zIndex: 50,
-        transition: 'height 0.3s ease',
-        height: isExpanded ? '80px' : '60px',
+        transition: 'all 0.3s ease',
+        height: isExpanded ? '100px' : '5px',
       }}
     >
-      {/* 展开/收起按钮 */}
-      <div
-        onClick={() => setIsExpanded(!isExpanded)}
-        style={{
-          position: 'absolute',
-          top: '-20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '60px',
-          height: '25px',
-          background: '#d40000',
-          borderRadius: '15px 15px 0 0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          zIndex: 51,
-        }}
-      >
-        <span style={{ color: 'white', fontSize: '12px' }}>
-          {isExpanded ? '▼' : '▲'}
-        </span>
-      </div>
-
-      {/* 左侧：播放信息 */}
-      <div
-        style={{
-          position: 'absolute',
-          left: '10px',
-          top: isExpanded ? '8px' : '10px',
-          width: 'calc(100% - 180px)',
-        }}
-      >
+      {/* 收起状态：只显示红色细条 */}
+      {!isExpanded && (
         <div
           style={{
-            fontSize: '14px',
-            fontWeight: 'bold',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {getDisplayName()}
-        </div>
-        <div
-          style={{
-            fontSize: '12px',
-            color: '#666',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {getDisplayDesc()}
-        </div>
-      </div>
-
-      {/* 中间：播放按钮 */}
-      <div
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
-        <button
-          onClick={togglePlay}
-          style={{
-            fontSize: '24px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '5px',
-          }}
-        >
-          {isPlaying ? '⏸' : '▶'}
-        </button>
-      </div>
-
-      {/* 时间轴 */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: isExpanded ? '10px' : '6px',
-          left: '10px',
-          right: '80px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
-        <span style={{ fontSize: '11px', color: '#666', minWidth: '35px' }}>
-          {formatTime(currentTime)}
-        </span>
-        <input
-          type="range"
-          min={0}
-          max={duration || 100}
-          value={currentTime}
-          onChange={handleSeek}
-          style={{
-            flex: 1,
-            height: '4px',
-            cursor: 'pointer',
+            height: '5px',
+            background: '#d40000',
+            width: '100%',
           }}
         />
-        <span style={{ fontSize: '11px', color: '#666', minWidth: '35px', textAlign: 'right' }}>
-          {formatTime(duration)}
-        </span>
-      </div>
+      )}
 
-      {/* 右侧：收藏按钮（展开时显示） */}
+      {/* 展开状态：显示完整播放器 */}
       {isExpanded && (
-        <div
-          style={{
-            position: 'absolute',
-            right: '10px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-          }}
-        >
-          <button
-            onClick={toggleFavorite}
+        <>
+          {/* 展开/收起按钮 */}
+          <div
+            onClick={() => setIsExpanded(!isExpanded)}
             style={{
-              fontSize: '24px',
-              background: 'none',
-              border: 'none',
+              position: 'absolute',
+              top: '-20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '60px',
+              height: '25px',
+              background: '#d40000',
+              borderRadius: '15px 15px 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               cursor: 'pointer',
-              padding: '5px',
+              zIndex: 51,
             }}
           >
-            {currentEpisode && favorites.some(f => f.programId === currentEpisode.programId) 
-              ? '⭐' 
-              : '☆'}
-          </button>
-        </div>
+            <span style={{ color: 'white', fontSize: '12px' }}>▼</span>
+          </div>
+
+          {/* 左侧：播放信息 */}
+          <div
+            style={{
+              position: 'absolute',
+              left: '10px',
+              top: '8px',
+              width: 'calc(100% - 160px)',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {getDisplayName()}
+            </div>
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#666',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {getDisplayDesc()}
+            </div>
+          </div>
+
+          {/* 中间：播放按钮 */}
+          <div
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            <button
+              onClick={togglePlay}
+              style={{
+                fontSize: '24px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '5px',
+              }}
+            >
+              {isPlaying ? '⏸' : '▶'}
+            </button>
+          </div>
+
+          {/* 收藏按钮 */}
+          <div
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+            }}
+          >
+            <button
+              onClick={toggleFavorite}
+              style={{
+                fontSize: '24px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '5px',
+              }}
+            >
+              {currentEpisode && favorites.some(f => f.programId === currentEpisode.programId) 
+                ? '⭐' 
+                : '☆'}
+            </button>
+          </div>
+
+          {/* 时间轴 */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '8px',
+              left: '10px',
+              right: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span style={{ fontSize: '11px', color: '#666', minWidth: '35px' }}>
+              {formatTime(currentTime)}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={duration || 100}
+              value={currentTime}
+              onChange={handleSeek}
+              style={{
+                flex: 1,
+                height: '4px',
+                cursor: 'pointer',
+              }}
+            />
+            <span style={{ fontSize: '11px', color: '#666', minWidth: '35px', textAlign: 'right' }}>
+              {formatTime(duration)}
+            </span>
+          </div>
+        </>
       )}
 
       <audio ref={audioRef} style={{ display: 'none' }} />

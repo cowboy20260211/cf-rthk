@@ -182,8 +182,8 @@ export default function AudioPlayer() {
         // Get duration from HLS levels
         if (data.levels && data.levels.length > 0) {
           const level = data.levels[0];
-          if (level.details && level.details.duration) {
-            const dur = level.details.duration;
+          if (level.details && level.duration) {
+            const dur = level.duration;
             console.log('[Player] HLS duration:', dur);
             setDuration(dur);
           }

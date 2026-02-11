@@ -115,13 +115,26 @@ export default function AudioPlayer() {
 
       if (streamUrl.includes('.m3u8')) {
         if (Hls.isSupported()) {
+          // Create new Hls instance each time
           const oldHls = hlsRef.current;
           if (oldHls) {
-            (oldHls as Hls).destroy();
+            try {
+              (oldHls as unknown as { destroy: () => void }).destroy();
+            } catch (e) {
+              console.log('HLS destroy error:', e);
+            }
           }
+
           const hls = new Hls();
           hlsRef.current = hls;
-          (hls as any).media = audio; // Direct media assignment
+
+          // Use attachMedia but handle the message channel error
+          try {
+            hls.attachMedia(audio);
+          } catch (e) {
+            console.log('attachMedia error:', e);
+            // Fallback: just load source directly
+          }
 
           hls.loadSource(streamUrl);
 
@@ -133,8 +146,7 @@ export default function AudioPlayer() {
             audio.muted = false;
             audio.volume = volume;
 
-            audio.play().catch(err => {
-              console.log('Play failed:', err);
+            audio.play().catch(() => {
               setStatus('點擊播放');
             });
           });
@@ -165,7 +177,7 @@ export default function AudioPlayer() {
           audio.volume = volume;
           audio.play().catch(() => setStatus('點擊播放'));
         } else {
-          // Fallback: try direct URL
+          // Try direct URL as fallback
           audio.src = streamUrl;
           audio.muted = false;
           audio.volume = volume;

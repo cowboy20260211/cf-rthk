@@ -20,6 +20,14 @@ export default function Favorites() {
 
   return (
     <div className='p-4 pb-24'>
+      {/* 返回按钮 */}
+      <div className='mb-4'>
+        <Link to='/' className='inline-flex items-center text-gray-600 hover:text-rthk-red'>
+          <span style={{ fontSize: '18px', marginRight: '4px' }}>←</span>
+          返回
+        </Link>
+      </div>
+
       <h1 className='text-2xl font-bold mb-6'>我的收藏</h1>
       {favorites.length === 0 ? (
         <div className='card text-center py-12'>

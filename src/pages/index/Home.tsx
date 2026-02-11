@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { usePlayer } from '../../stores/PlayerContext';
+import { useFavorite } from '../../stores/FavoriteContext';
 import { RTHK_LIVE_STREAMS } from '../../services/rthk';
 import rthkApi from '../../services/rthkApi';
 import type { Program } from '../../services/rthkApi';
 
 export default function Home() {
   const { currentChannel, setChannel } = usePlayer();
+  const { favorites } = useFavorite();
   const popularPrograms = rthkApi.getPopularPrograms().slice(0, 4);
 
   const liveChannels = [
@@ -124,10 +126,27 @@ export default function Home() {
             管理 →
           </Link>
         </div>
-        <Link to='/favorites' className='card block text-center py-8 hover:bg-gray-50'>
-          <p className='text-gray-500'>還沒有收藏節目</p>
-          <p className='text-sm text-gray-400 mt-2'>點擊添加收藏</p>
-        </Link>
+        {favorites.length === 0 ? (
+          <Link to='/favorites' className='card block text-center py-8 hover:bg-gray-50'>
+            <p className='text-gray-500'>還沒有收藏節目</p>
+            <p className='text-sm text-gray-400 mt-2'>點擊添加收藏</p>
+          </Link>
+        ) : (
+          <Link to='/favorites' className='card block hover:bg-gray-50'>
+            <div className='flex items-center justify-between py-4'>
+              <div className='flex items-center gap-4'>
+                <div className='w-12 h-12 rounded-full bg-rthk-red text-white flex items-center justify-center text-xl'>
+                  ⭐
+                </div>
+                <div>
+                  <h3 className='font-bold'>已收藏 {favorites.length} 個節目</h3>
+                  <p className='text-sm text-gray-500'>點擊查看和管理</p>
+                </div>
+              </div>
+              <span className='text-rthk-red'>→</span>
+            </div>
+          </Link>
+        )}
       </section>
     </div>
   );

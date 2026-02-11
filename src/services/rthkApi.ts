@@ -56,36 +56,6 @@ export function getArchiveUrl(channelId: string, programId: string, dateStr: str
   );
 }
 
-// Fallback programs if scraping fails
-function getFallbackPrograms(channelId: string): Program[] {
-  const fallbackData: Record<string, Program[]> = {
-    radio1: [
-      { id: 'morning', title: '晨光第一線', channel: '第一台', channelId: 'radio1', description: '晨早新聞時事節目', schedule: '星期一至六 06:00-10:00' },
-      { id: 'millennium', title: '千禧年代', channel: '第一台', channelId: 'radio1', description: '新聞時事評論節目', schedule: '星期一至五 08:00-08:30' },
-      { id: 'freedom', title: '自由風自由Phone', channel: '第一台', channelId: 'radio1', description: '時事烽煙節目', schedule: '星期一至五 16:00-17:00' },
-      { id: 'health', title: '精靈一點', channel: '第一台', channelId: 'radio1', description: '健康資訊節目', schedule: '星期一至五 13:00-14:00' },
-      { id: 'news', title: '新聞天地', channel: '第一台', channelId: 'radio1', description: '本地及國際新聞報道', schedule: '每日多個时段' },
-      { id: 'finance', title: '財經即時通', channel: '第一台', channelId: 'radio1', description: '財經新聞及分析', schedule: '星期一至五 07:00-08:00' },
-    ],
-    radio2: [
-      { id: 'keepuco', title: '輕談淺唱不夜天', channel: '第二台', channelId: 'radio2', description: '音樂訪談節目', schedule: '星期一至五 02:00-06:00' },
-      { id: 'musiclover', title: '音樂情人', channel: '第二台', channelId: 'radio2', description: '經典音樂節目', schedule: '星期一至五 21:00-22:00' },
-      { id: 'madelee', title: 'Made in Hong Kong 李志剛', channel: '第二台', channelId: 'radio2', description: '香港音樂文化節目', schedule: '星期一至五 13:00-15:00' },
-      { id: 'crazylife', title: '瘋Show快活人', channel: '第二台', channelId: 'radio2', description: '輕鬆娛樂節目', schedule: '星期一至五 10:00-12:00' },
-      { id: 'music', title: '音樂中年', channel: '第二台', channelId: 'radio2', description: '音樂訪談節目', schedule: '星期一至五 12:00-13:00' },
-      { id: '三五成群', title: '三五成群', channel: '第二台', channelId: 'radio2', description: '青年綜合節目', schedule: '星期一至五 15:00-17:00' },
-    ],
-    radio5: [
-      { id: 'culture', title: '文化星空', channel: '第五台', channelId: 'radio5', description: '文化藝術資訊節目', schedule: '星期一至五 10:00-12:00' },
-      { id: 'education', title: '教育新天地', channel: '第五台', channelId: 'radio5', description: '教育資訊節目', schedule: '星期一至五 14:00-15:00' },
-      { id: 'sports', title: '體育世界', channel: '第五台', channelId: 'radio5', description: '體育新聞及節目', schedule: '週末多個时段' },
-      { id: 'community', title: '社區時事', channel: '第五台', channelId: 'radio5', description: '社區時事評論節目', schedule: '星期一至五 08:00-09:00' },
-      { id: 'senior', title: '長者天地', channel: '第五台', channelId: 'radio5', description: '長者資訊及娛樂節目', schedule: '星期一至五 16:00-17:00' },
-    ],
-  };
-
-  return fallbackData[channelId] || [];
-}
 
 // Generate episodes based on program schedule
 function generateEpisodesFromSchedule(programId: string, channelId: string): Episode[] {
@@ -250,29 +220,6 @@ export const CHANNELS: Record<string, Channel> = {
 
 // Programs by channel
 export const PROGRAMS: Record<string, Program[]> = {
-  radio1: [
-    { id: 'morning', title: '晨光第一線', channel: '第一台', channelId: 'radio1', description: '晨早新聞時事節目', archiveUrl: '/radio/radio1/programme/morning', schedule: '星期一至六 06:00-10:00', episodeCount: 30 },
-    { id: 'millennium', title: '千禧年代', channel: '第一台', channelId: 'radio1', description: '新聞時事評論節目', archiveUrl: '/radio/radio1/programme/millennium', schedule: '星期一至五 08:00-08:30', episodeCount: 30 },
-    { id: 'freedom', title: '自由風自由Phone', channel: '第一台', channelId: 'radio1', description: '時事烽煙節目', archiveUrl: '/radio/radio1/programme/freedom', schedule: '星期一至五 16:00-17:00', episodeCount: 30 },
-    { id: 'health', title: '精靈一點', channel: '第一台', channelId: 'radio1', description: '健康資訊節目', archiveUrl: '/radio/radio1/programme/health', schedule: '星期一至五 13:00-14:00', episodeCount: 30 },
-    { id: 'news', title: '新聞天地', channel: '第一台', channelId: 'radio1', description: '本地及國際新聞報道', archiveUrl: '/radio/radio1/programme/news', schedule: '每日多個时段', episodeCount: 30 },
-    { id: 'finance', title: '財經即時通', channel: '第一台', channelId: 'radio1', description: '財經新聞及分析', archiveUrl: '/radio/radio1/programme/finance', schedule: '星期一至五 07:00-08:00', episodeCount: 30 },
-  ],
-  radio2: [
-    { id: 'keepuco', title: '輕談淺唱不夜天', channel: '第二台', channelId: 'radio2', description: '音樂訪談節目', archiveUrl: '/radio/radio2/programme/keepuco', schedule: '星期一至五 02:00-06:00', episodeCount: 30 },
-    { id: 'musiclover', title: '音樂情人', channel: '第二台', channelId: 'radio2', description: '經典音樂節目', archiveUrl: '/radio/radio2/programme/musiclover', schedule: '星期一至五 21:00-22:00', episodeCount: 30 },
-    { id: 'madelee', title: 'Made in Hong Kong 李志剛', channel: '第二台', channelId: 'radio2', description: '香港音樂文化節目', archiveUrl: '/radio/radio2/programme/madelee', schedule: '星期一至五 13:00-15:00', episodeCount: 30 },
-    { id: 'crazylife', title: '瘋Show快活人', channel: '第二台', channelId: 'radio2', description: '輕鬆娛樂節目', archiveUrl: '/radio/radio2/programme/crazylife', schedule: '星期一至五 10:00-12:00', episodeCount: 30 },
-    { id: 'music', title: '音樂中年', channel: '第二台', channelId: 'radio2', description: '音樂訪談節目', archiveUrl: '/radio/radio2/programme/musica', schedule: '星期一至五 12:00-13:00', episodeCount: 30 },
-    { id: '三五成群', title: '三五成群', channel: '第二台', channelId: 'radio2', description: '青年綜合節目', archiveUrl: '/radio/radio2/programme/三五成群', schedule: '星期一至五 15:00-17:00', episodeCount: 30 },
-  ],
-  radio5: [
-    { id: 'culture', title: '文化星空', channel: '第五台', channelId: 'radio5', description: '文化藝術資訊節目', archiveUrl: '/radio/radio5/programme/culture', schedule: '星期一至五 10:00-12:00', episodeCount: 30 },
-    { id: 'education', title: '教育新天地', channel: '第五台', channelId: 'radio5', description: '教育資訊節目', archiveUrl: '/radio/radio5/programme/education', schedule: '星期一至五 14:00-15:00', episodeCount: 30 },
-    { id: 'sports', title: '體育世界', channel: '第五台', channelId: 'radio5', description: '體育新聞及節目', archiveUrl: '/radio/radio5/programme/sports', schedule: '週末多個时段', episodeCount: 30 },
-    { id: 'community', title: '社區時事', channel: '第五台', channelId: 'radio5', description: '社區時事評論節目', archiveUrl: '/radio/radio5/programme/community', schedule: '星期一至五 08:00-09:00', episodeCount: 30 },
-    { id: 'senior', title: '長者天地', channel: '第五台', channelId: 'radio5', description: '長者資訊及娛樂節目', archiveUrl: '/radio/radio5/programme/senior', schedule: '星期一至五 16:00-17:00', episodeCount: 30 },
-  ],
 };
 
 // Popular programs

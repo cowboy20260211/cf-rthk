@@ -1,5 +1,5 @@
-import { usePlayerStore } from '../../stores/playerStore';
-import AudioPlayer from '../../components/Player/AudioPlayer';
+import { usePlayer } from '../../stores/PlayerContext';
+import { RTHK_LIVE_STREAMS } from '../../services/rthk';
 
 const channels = [
   {
@@ -29,61 +29,57 @@ const channels = [
 ];
 
 export default function Live() {
-  const { currentChannel, setChannel, setEpisode } = usePlayerStore();
+  const { currentChannel, setChannel } = usePlayer();
 
-  const playChannel = (channel: typeof channels[0]) => {
-    setChannel({
+  console.log('Live page rendered, currentChannel:', currentChannel);
+
+  const playChannel = (channel: (typeof channels)[0]) => {
+    console.log('playChannel called:', channel.name);
+    const channelData = {
       id: channel.id,
       name: channel.name,
       nameEn: channel.nameEn,
-      streamUrl: `https://stream.rthk.hk/${channel.id}live`,
+      streamUrl: RTHK_LIVE_STREAMS[channel.id] || '',
       logo: '',
       description: channel.description,
-    });
-    setEpisode(null);
+    };
+    console.log('Calling setChannel with:', channelData);
+    setChannel(channelData);
   };
 
   return (
-    <div className="p-4 pb-24">
-      <h1 className="text-2xl font-bold mb-6">直播频道</h1>
-
-      <div className="space-y-4">
-        {channels.map((channel) => (
+    <div className='p-4 pb-24'>
+      <h1 className='text-2xl font-bold mb-6'>直播频道</h1>
+      <div className='space-y-4'>
+        {channels.map(channel => (
           <div
             key={channel.id}
             className={`card ${currentChannel?.id === channel.id ? 'ring-2 ring-rthk-red' : ''}`}
           >
-            <div className="flex gap-4">
+            <div className='flex gap-4'>
               <div
                 className={`w-20 h-20 ${channel.color} rounded-xl flex items-center justify-center flex-shrink-0`}
               >
-                <span className="text-white text-2xl font-bold">{channel.name}</span>
+                <span className='text-white text-2xl font-bold'>{channel.name}</span>
               </div>
-
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
+              <div className='flex-1'>
+                <div className='flex items-start justify-between'>
                   <div>
-                    <h2 className="text-xl font-bold">{channel.name}</h2>
-                    <p className="text-sm text-gray-500">{channel.nameEn}</p>
+                    <h2 className='text-xl font-bold'>{channel.name}</h2>
+                    <p className='text-sm text-gray-500'>{channel.nameEn}</p>
                   </div>
                   {currentChannel?.id === channel.id && (
-                    <span className="flex items-center gap-1 text-red-600">
-                      <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+                    <span className='flex items-center gap-1 text-red-600'>
+                      <span className='w-2 h-2 bg-red-600 rounded-full animate-pulse' />
                       LIVE
                     </span>
                   )}
                 </div>
-
-                <p className="text-sm text-gray-600 mt-2">{channel.description}</p>
-                <p className="text-xs text-gray-400 mt-1">{channel.frequency}</p>
-
+                <p className='text-sm text-gray-600 mt-2'>{channel.description}</p>
+                <p className='text-xs text-gray-400 mt-1'>{channel.frequency}</p>
                 <button
                   onClick={() => playChannel(channel)}
-                  className={`mt-3 px-6 py-2 rounded-full font-medium transition-colors ${
-                    currentChannel?.id === channel.id
-                      ? 'bg-gray-200 text-gray-700'
-                      : 'bg-rthk-red text-white hover:bg-red-700'
-                  }`}
+                  className={`mt-3 px-6 py-2 rounded-full font-medium ${currentChannel?.id === channel.id ? 'bg-gray-200 text-gray-700' : 'bg-rthk-red text-white'}`}
                 >
                   {currentChannel?.id === channel.id ? '正在收听' : '开始收听'}
                 </button>
@@ -92,8 +88,6 @@ export default function Live() {
           </div>
         ))}
       </div>
-
-      <AudioPlayer />
     </div>
   );
 }

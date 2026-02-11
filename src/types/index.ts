@@ -20,6 +20,7 @@ export interface Program {
 export interface Episode {
   id: string;
   programId: string;
+  channelId: string;
   title: string;
   description: string;
   publishDate: string;

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试 - 香港电台</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { color: #d40000; margin-bottom: 20px; }
+    .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .channel { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+    .channel.radio1 { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+    .channel.radio2 { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; }
+    .channel.radio5 { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
+    .channel-name { font-size: 24px; font-weight: bold; }
+    .channel-desc { font-size: 14px; opacity: 0.9; }
+    .channel-info { flex: 1; }
+    button { padding: 12px 24px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; background: white; color: #333; font-weight: bold; }
+    audio { width: 100%; margin-top: 12px; }
+    .status { margin-top: 12px; padding: 12px; border-radius: 8px; text-align: center; font-size: 14px; }
+    .status.loading { background: #fef3c7; color: #92400e; }
+    .status.error { background: #fee2e2; color: #dc2626; }
+    .status.success { background: #dcfce7; color: #16a34a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>香港电台直播测试</h1>
+    
+    <div class="card">
+      <div class="channel radio1">
+        <div class="channel-info">
+          <div class="channel-name">第一台</div>
+          <div class="channel-desc">FM 92.6MHz - 新闻、财经、时事</div>
+        </div>
+        <button id="btn1" onclick="play('radio1')">播放</button>
+      </div>
+      <audio id="audio1" controls></audio>
+      <div id="status1" class="status">点击播放按钮开始收听</div>
+    </div>
+
+    <div class="card">
+      <div class="channel radio2">
+        <div class="channel-info">
+          <div class="channel-name">第二台</div>
+          <div class="channel-desc">FM 94.8MHz - 流行音乐、青年节目</div>
+        </div>
+        <button id="btn2" onclick="play('radio2')">播放</button>
+      </div>
+      <audio id="audio2" controls></audio>
+      <div id="status2" class="status">点击播放按钮开始收听</div>
+    </div>
+
+    <div class="card">
+      <div class="channel radio5">
+        <div class="channel-info">
+          <div class="channel-name">第五台</div>
+          <div class="channel-desc">AM 783kHz - 文化、教育、社区</div>
+        </div>
+        <button id="btn5" onclick="play('radio5')">播放</button>
+      </div>
+      <audio id="audio5" controls></audio>
+      <div id="status5" class="status">点击播放按钮开始收听</div>
+    </div>
+  </div>
+
+  <script>
+    const streams = {
+      radio1: 'https://rthkradio1-live.akamaized.net/hls/live/2035313/radio1/master.m3u8',
+      radio2: 'https://rthkradio2-live.akamaized.net/hls/live/2040078/radio2/index.m3u8',
+      radio5: 'https://rthkradio5-live.akamaized.net/hls/live/2040081/radio5/index_64_a.m3u8'
+    };
+
+    let currentAudio = null;
+    let currentChannel = null;
+
+    async function play(channel) {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.src = '';
+        if (currentChannel) {
+          var prevStatus = document.getElementById('status' + currentChannel);
+          var prevBtn = document.getElementById('btn' + currentChannel);
+          if (prevStatus) { prevStatus.textContent = '已停止'; prevStatus.className = 'status'; }
+          if (prevBtn) { prevBtn.textContent = '播放'; }
+        }
+      }
+
+      var audio = document.getElementById('audio' + channel);
+      var status = document.getElementById('status' + channel);
+      var btn = document.getElementById('btn' + channel);
+
+      audio.src = streams[channel];
+      currentAudio = audio;
+      currentChannel = channel;
+
+      status.textContent = '加载中...';
+      status.className = 'status loading';
+      btn.textContent = '加载中';
+
+      try {
+        await audio.play();
+        status.textContent = '播放中';
+        status.className = 'status success';
+        btn.textContent = '暂停';
+      } catch (err) {
+        status.textContent = '失败: ' + err.message;
+        status.className = 'status error';
+        btn.textContent = '重试';
+      }
+    }
+  </script>
+</body>
+</html>

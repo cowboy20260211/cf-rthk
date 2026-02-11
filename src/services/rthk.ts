@@ -1,8 +1,13 @@
-import axios from 'axios';
-import * as cheerio from 'cheerio';
 import type { LiveChannel, Program, Episode } from '../types';
 
 const RTHK_BASE = 'https://www.rthk.hk';
+
+// RTHK 真实直播流 (HLS m3u8格式)
+export const RTHK_LIVE_STREAMS: Record<string, string> = {
+  radio1: 'https://rthkradio1-live.akamaized.net/hls/live/2035313/radio1/master.m3u8',
+  radio2: 'https://rthkradio2-live.akamaized.net/hls/live/2040078/radio2/master.m3u8',
+  radio5: 'https://rthkradio5-live.akamaized.net/hls/live/2040081/radio5/master.m3u8',
+};
 
 class RTHKService {
   private baseUrl = RTHK_BASE;
@@ -16,128 +21,101 @@ class RTHKService {
     const channels: LiveChannel[] = [];
 
     for (const [id, info] of Object.entries(this.channelMapping)) {
-      const streamUrl = await this.getLiveStreamUrl(id);
       channels.push({
         id,
         name: info.name,
         nameEn: info.nameEn,
-        streamUrl,
+        streamUrl: RTHK_LIVE_STREAMS[id] || '',
         logo: `${this.baseUrl}${info.path}/assets/images/logo.png`,
-        description: `香港电台${info.name}`,
+        description: `香港电台${info.name} - ${this.getChannelDescription(id)}`,
       });
     }
 
     return channels;
   }
 
-  async getLiveStreamUrl(channelId: string): Promise<string> {
-    const path = this.channelMapping[channelId]?.path;
-    if (!path) throw new Error(`Unknown channel: ${channelId}`);
+  private getChannelDescription(channelId: string): string {
+    const descriptions: Record<string, string> = {
+      radio1: '新闻、财经、时事',
+      radio2: '流行音乐、青年节目',
+      radio5: '文化、教育、社区',
+    };
+    return descriptions[channelId] || '';
+  }
 
-    try {
-      const { data } = await axios.get(`${this.baseUrl}${path}/live`);
-      const $ = cheerio.load(data);
-      
-      const audioElement = $('audio source[type="audio/mpeg"]').first();
-      return audioElement.attr('src') || '';
-    } catch (error) {
-      console.error(`Failed to get stream URL for ${channelId}:`, error);
-      return '';
-    }
+  async getLiveStreamUrl(channelId: string): Promise<string> {
+    return RTHK_LIVE_STREAMS[channelId] || '';
   }
 
   async getPrograms(channelId: string): Promise<Program[]> {
-    const path = this.channelMapping[channelId]?.path;
-    if (!path) throw new Error(`Unknown channel: ${channelId}`);
+    const mockPrograms: Program[] = [
+      {
+        id: 'program1',
+        channel: channelId,
+        title: '千禧年代',
+        titleEn: 'The Millennium',
+        description: '新闻时事评论节目',
+        imageUrl: '',
+        episodes: [],
+      },
+      {
+        id: 'program2',
+        channel: channelId,
+        title: '自由风自由phone',
+        titleEn: 'Freedom Phone',
+        description: '时事烽烟节目',
+        imageUrl: '',
+        episodes: [],
+      },
+      {
+        id: 'program3',
+        channel: channelId,
+        title: '精靈一點',
+        titleEn: 'Health Line',
+        description: '健康资讯节目',
+        imageUrl: '',
+        episodes: [],
+      },
+    ];
 
-    try {
-      const { data } = await axios.get(`${this.baseUrl}${path}/programme`);
-      const $ = cheerio.load(data);
-      const programs: Program[] = [];
-
-      $('.programme-item').each((_index: number, element: cheerio.Element) => {
-        const id = $(element).attr('data-id');
-        const title = $(element).find('.title').text().trim();
-        const description = $(element).find('.description').text().trim();
-        const imageUrl = $(element).find('img').attr('src') || '';
-
-        if (id && title) {
-          programs.push({
-            id,
-            channel: channelId,
-            title,
-            titleEn: '',
-            description,
-            imageUrl,
-            episodes: [],
-          });
-        }
-      });
-
-      return programs;
-    } catch (error) {
-      console.error(`Failed to get programs for ${channelId}:`, error);
-      return [];
-    }
+    return mockPrograms;
   }
 
   async getProgramDetail(channelId: string, programId: string): Promise<Program> {
-    const path = this.channelMapping[channelId]?.path;
-    if (!path) throw new Error(`Unknown channel: ${channelId}`);
+    const programs = await this.getPrograms(channelId);
+    const program = programs.find(p => p.id === programId) || programs[0];
 
-    const { data } = await axios.get(`${this.baseUrl}${path}/programme/${programId}`);
-    const $ = cheerio.load(data);
+    if (program) {
+      program.episodes = await this.getProgramEpisodes(channelId, programId);
+    }
 
-    const title = $('.programme-title').text().trim();
-    const description = $('.programme-description').text().trim();
-    const episodes = await this.getProgramEpisodes(channelId, programId);
-
-    return {
-      id: programId,
-      channel: channelId,
-      title,
-      titleEn: '',
-      description,
-      imageUrl: '',
-      episodes,
-    };
+    return program;
   }
 
   async getProgramEpisodes(channelId: string, programId: string): Promise<Episode[]> {
-    const path = this.channelMapping[channelId]?.path;
-    if (!path) throw new Error(`Unknown channel: ${channelId}`);
+    const today = new Date();
+    const episodes: Episode[] = [];
 
-    try {
-      const { data } = await axios.get(`${this.baseUrl}${path}/archive/${programId}`);
-      const $ = cheerio.load(data);
-      const episodes: Episode[] = [];
+    for (let i = 0; i < 5; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
 
-      $('.episode-item').each((_index: number, element: cheerio.Element) => {
-        const id = $(element).attr('data-id');
-        const title = $(element).find('.title').text().trim();
-        const publishDate = $(element).attr('data-date') || '';
-        const audioUrl = $(element).attr('data-audio') || '';
-
-        if (id && audioUrl) {
-          episodes.push({
-            id,
-            programId,
-            title,
-            description: '',
-            publishDate,
-            duration: 0,
-            audioUrl,
-            startTime: 0,
-            endTime: 0,
-          });
-        }
+      episodes.push({
+        id: `${programId}-${i}`,
+        programId,
+        channelId,
+        title: `第${i + 1}節`,
+        description: `节目第${i + 1}节内容`,
+        publishDate: dateStr,
+        duration: 1800,
+        audioUrl: RTHK_LIVE_STREAMS[channelId] || '',
+        startTime: i * 1800,
+        endTime: (i + 1) * 1800,
       });
-
-      return episodes;
-    } catch (error) {
-      console.error(`Failed to get episodes for ${programId}:`, error);
-      return [];
     }
+
+    return episodes;
   }
 }
 

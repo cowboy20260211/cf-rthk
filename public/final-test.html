@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>香港电台直播测试</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { color: #d40000; margin-bottom: 20px; }
+    .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 16px; }
+    .channel { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+    .radio1 { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+    .radio2 { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; }
+    .radio5 { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
+    .name { font-size: 24px; font-weight: bold; }
+    .desc { font-size: 14px; opacity: 0.9; }
+    button { padding: 12px 24px; border-radius: 8px; cursor: pointer; background: white; color: #333; font-weight: bold; border: none; }
+    audio { width: 100%; margin-top: 12px; }
+    .status { margin-top: 12px; padding: 12px; border-radius: 8px; text-align: center; }
+    .loading { background: #fef3c7; color: #92400e; }
+    .error { background: #fee2e2; color: #dc2626; }
+    .success { background: #dcfce7; color: #16a34a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>香港电台直播测试</h1>
+    
+    <div class="card">
+      <div class="channel radio1">
+        <div>
+          <div class="name">第一台</div>
+          <div class="desc">FM 92.6MHz - 新闻、财经、时事</div>
+        </div>
+        <button onclick="play(1)">播放</button>
+      </div>
+      <audio id="a1" controls></audio>
+      <div id="s1" class="status">点击播放按钮</div>
+    </div>
+
+    <div class="card">
+      <div class="channel radio2">
+        <div>
+          <div class="name">第二台</div>
+          <div class="desc">FM 94.8MHz - 流行音乐</div>
+        </div>
+        <button onclick="play(2)">播放</button>
+      </div>
+      <audio id="a2" controls></audio>
+      <div id="s2" class="status">点击播放按钮</div>
+    </div>
+
+    <div class="card">
+      <div class="channel radio5">
+        <div>
+          <div class="name">第五台</div>
+          <div class="desc">AM 783kHz - 文化、教育</div>
+        </div>
+        <button onclick="play(5)">播放</button>
+      </div>
+      <audio id="a5" controls></audio>
+      <div id="s5" class="status">点击播放按钮</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+  <script>
+    const streams = {
+      1: 'https://rthkradio1-live.akamaized.net/hls/live/2035313/radio1/index_64_a.m3u8',
+      2: 'https://rthkradio2-live.akamaized.net/hls/live/2040078/radio2/index_64_a.m3u8',
+      5: 'https://rthkradio5-live.akamaized.net/hls/live/2040081/radio5/index_64_a.m3u8'
+    };
+
+    let current = null;
+    let hls = null;
+
+    function stopPrev() {
+      if (current) {
+        var prevAudio = document.getElementById('a' + current);
+        var prevStatus = document.getElementById('s' + current);
+        if (prevAudio) { 
+          prevAudio.pause(); 
+          if (hls) { hls.destroy(); hls = null; }
+        }
+        if (prevStatus) { 
+          prevStatus.textContent = '已停止'; 
+          prevStatus.className = 'status'; 
+        }
+        current = null;
+      }
+    }
+
+    async function play(n) {
+      stopPrev();
+      
+      var audio = document.getElementById('a' + n);
+      var status = document.getElementById('s' + n);
+      var url = streams[n];
+      
+      status.textContent = '加载中...';
+      status.className = 'status loading';
+      
+      if (Hls.isSupported()) {
+        if (hls) { hls.destroy(); }
+        hls = new Hls({
+          xhrSetup: function(xhr, url) {
+            xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+            xhr.setRequestHeader('Referer', 'https://www.rthk.hk/');
+          }
+        });
+        hls.loadSource(url);
+        hls.attachMedia(audio);
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+          audio.play().then(function() {
+            status.textContent = '播放中';
+            status.className = 'status success';
+          }).catch(function(e) {
+            status.textContent = '播放失败: ' + e.message;
+            status.className = 'status error';
+          });
+        });
+        hls.on(Hls.Events.ERROR, function(event, data) {
+          if (data.fatal) {
+            status.textContent = '加载失败';
+            status.className = 'status error';
+          }
+        });
+        current = n;
+      } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+        audio.src = url;
+        audio.play().then(function() {
+          status.textContent = '播放中';
+          status.className = 'status success';
+        }).catch(function(e) {
+          status.textContent = '播放失败: ' + e.message;
+          status.className = 'status error';
+        });
+        current = n;
+      } else {
+        status.textContent = '您的浏览器不支持HLS';
+        status.className = 'status error';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,132 +1,407 @@
 import { useEffect, useRef, useState } from 'react';
-import { Howl } from 'howler';
-import { usePlayerStore } from '../../stores/playerStore';
+import Hls from 'hls.js';
+import { usePlayer } from '../../stores/PlayerContext';
+import { RTHK_LIVE_STREAMS } from '../../services/rthk';
 
 export default function AudioPlayer() {
-  const {
-    isPlaying,
-    currentChannel,
-    currentEpisode,
-    volume,
-    setPlaying,
-    setProgress,
-    setDuration,
-  } = usePlayerStore();
+  const { currentChannel, currentEpisode } = usePlayer();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const [status, setStatus] = useState('等待中');
+  const [isPaused, setIsPaused] = useState(true);
+  const [startOffset, setStartOffset] = useState(0);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [hlsDuration, setHlsDuration] = useState<number | null>(null);
+  const lastEpisodeIdRef = useRef<string>('');
+  const isSeekingRef = useRef(false);
 
-  const soundRef = useRef<Howl | null>(null);
-  const [currentTime, setCurrentTime] = useState(0);
-
-  useEffect(() => {
-    const audioUrl = currentChannel?.streamUrl || currentEpisode?.audioUrl;
-    if (!audioUrl) return;
-
-    if (soundRef.current) {
-      soundRef.current.unload();
+  const getStreamUrl = () => {
+    if (currentEpisode && currentEpisode.audioUrl) {
+      return currentEpisode.audioUrl;
     }
-
-    const sound = new Howl({
-      src: [audioUrl],
-      html5: true,
-      volume,
-      onplay: () => setPlaying(true),
-      onpause: () => setPlaying(false),
-      onend: () => setPlaying(false),
-      onloaderror: (_, error) => console.error('Load error:', error),
-      onplayerror: (_, error) => console.error('Play error:', error),
-    });
-
-    soundRef.current = sound;
-
-    return () => {
-      sound.unload();
-    };
-  }, [currentChannel, currentEpisode]);
-
-  useEffect(() => {
-    if (soundRef.current) {
-      soundRef.current.volume(volume);
+    if (currentEpisode) {
+      const channelId = currentEpisode.channelId || 'radio1';
+      return (
+        RTHK_LIVE_STREAMS[channelId as keyof typeof RTHK_LIVE_STREAMS] || RTHK_LIVE_STREAMS.radio1
+      );
     }
-  }, [volume]);
+    return currentChannel?.streamUrl || '';
+  };
 
-  useEffect(() => {
-    if (!soundRef.current) return;
+  const getDisplayName = () => {
+    if (currentEpisode) return currentEpisode.title;
+    return currentChannel?.name || '未知';
+  };
 
-    const interval = setInterval(() => {
-      if (soundRef.current && isPlaying) {
-        const seek = soundRef.current.seek() as number;
-        const duration = soundRef.current.duration();
-        setCurrentTime(seek);
-        setProgress(seek);
-        setDuration(duration);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, setProgress, setDuration]);
-
-  const togglePlay = () => {
-    if (!soundRef.current) return;
-
-    if (isPlaying) {
-      soundRef.current.pause();
-    } else {
-      soundRef.current.play();
+  const getDisplayDesc = () => {
+    if (currentEpisode) {
+      return currentEpisode.publishDate;
     }
+    return currentChannel?.description || '';
   };
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+
+    if (hours > 0) {
+      return `${hours}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  };
+
+  useEffect(() => {
+    audioRef.current = new Audio();
+    audioRef.current.crossOrigin = 'anonymous';
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (audioRef.current && !isSeekingRef.current) {
+        setIsPaused(audioRef.current.paused);
+        if (!audioRef.current.paused) {
+          setStartOffset(audioRef.current.currentTime);
+        }
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    const streamUrl = getStreamUrl();
+
+    if (!audio || !streamUrl) return;
+
+    // Check if this is a live stream (no episode, but has channel)
+    const isLiveStream = !currentEpisode && currentChannel;
+    const isEpisodePlayback = currentEpisode;
+
+    if (isLiveStream) {
+      // Live stream mode
+      const lastChannelId =
+        lastEpisodeIdRef.current.split('-')[0] === 'live'
+          ? lastEpisodeIdRef.current.replace('live-', '')
+          : '';
+      const channelChanged = currentChannel?.id !== lastChannelId;
+
+      if (!channelChanged && lastEpisodeIdRef.current.startsWith('live-')) return;
+
+      lastEpisodeIdRef.current = `live-${currentChannel?.id || ''}`;
+
+      console.log('Loading live stream:', streamUrl);
+      setStatus('加載中...');
+
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+
+      audio.pause();
+      audio.currentTime = 0;
+
+      if (streamUrl.includes('.m3u8')) {
+        if (Hls.isSupported()) {
+          // HLS.js with CORS support - no manual Origin/Referer headers allowed
+          // Browser handles CORS automatically
+          const hls = new Hls();
+          hlsRef.current = hls;
+
+          hls.loadSource(streamUrl);
+          hls.attachMedia(audio);
+
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            const duration = hls.media?.duration;
+            if (duration && isFinite(duration) && duration > 0) {
+              setHlsDuration(duration);
+              console.log('HLS duration from manifest:', duration);
+            }
+            audio
+              .play()
+              .then(() => {
+                setStatus('播放中');
+                setErrorMsg('');
+              })
+              .catch(() => setStatus('點擊播放'));
+          });
+
+          hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (data.fatal) {
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  setErrorMsg('網絡錯誤，請檢查連線 (可能需要香港IP)');
+                  setStatus('網絡錯誤');
+                  // Try to recover
+                  hls.startLoad();
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  setErrorMsg('媒體錯誤，請嘗試其他節目');
+                  setStatus('媒體錯誤');
+                  break;
+                default:
+                  setErrorMsg(`加載失敗: ${data.type}`);
+                  setStatus('加載錯誤');
+                  break;
+              }
+            }
+          });
+        } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+          audio.src = streamUrl;
+          audio.load();
+          audio.oncanplay = () => {
+            audio
+              .play()
+              .then(() => {
+                setStatus('播放中');
+              })
+              .catch(() => setStatus('點擊播放'));
+          };
+        }
+      } else {
+        audio.src = streamUrl;
+        audio.load();
+        audio.oncanplay = () => {
+          audio
+            .play()
+            .then(() => {
+              setStatus('播放中');
+            })
+            .catch(() => setStatus('點擊播放'));
+        };
+      }
+
+      audio.onwaiting = () => setStatus('緩衝中...');
+      audio.onplaying = () => setStatus('播放中');
+      audio.onended = () => setStatus('播放結束');
+      audio.onerror = () => {
+        setErrorMsg(`錯誤: ${audio.error?.message || '未知錯誤'}`);
+        setStatus('播放錯誤');
+      };
+
+      return () => {
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+          hlsRef.current = null;
+        }
+      };
+    }
+
+    // Episode playback mode
+    if (!isEpisodePlayback) return;
+
+    const episodeChanged = currentEpisode.id !== lastEpisodeIdRef.current;
+    lastEpisodeIdRef.current = currentEpisode.id;
+
+    if (!episodeChanged) return;
+
+    console.log('Loading episode:', streamUrl);
+    setStatus('加載中...');
+    setStartOffset(currentEpisode.startTime || 0);
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    audio.pause();
+    audio.currentTime = currentEpisode.startTime || 0;
+
+    if (streamUrl.includes('.m3u8')) {
+      if (Hls.isSupported()) {
+        // HLS.js with CORS support
+        const hls = new Hls({
+          startPosition: currentEpisode.startTime || 0,
+          // Increase timeouts for slow connections
+          loader: Hls.DefaultConfig.loader,
+        });
+        hlsRef.current = hls;
+
+        hls.loadSource(streamUrl);
+        hls.attachMedia(audio);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          const duration = hls.media?.duration;
+          if (duration && isFinite(duration) && duration > 0) {
+            setHlsDuration(duration);
+            console.log('Episode HLS duration:', duration);
+          }
+          audio.currentTime = currentEpisode.startTime || 0;
+          audio
+            .play()
+            .then(() => {
+              setStatus('播放中');
+              setErrorMsg('');
+            })
+            .catch(() => setStatus('點擊播放'));
+        });
+
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                setErrorMsg('網絡錯誤，請檢查連線 (可能需要香港IP)');
+                setStatus('網絡錯誤');
+                // Try to recover
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                setErrorMsg('媒體錯誤，請嘗試其他節目');
+                setStatus('媒體錯誤');
+                break;
+              default:
+                setErrorMsg(`加載失敗: ${data.type}`);
+                setStatus('加載錯誤');
+                break;
+            }
+          }
+        });
+      } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+        audio.src = streamUrl;
+        audio.load();
+        audio.oncanplay = () => {
+          audio.currentTime = currentEpisode.startTime || 0;
+          audio
+            .play()
+            .then(() => setStatus('播放中'))
+            .catch(() => setStatus('點擊播放'));
+        };
+      }
+    } else {
+      audio.src = streamUrl;
+      audio.crossOrigin = 'anonymous';
+      audio.load();
+      audio.oncanplay = () => {
+        audio
+          .play()
+          .then(() => {
+            setStatus('播放中');
+            setErrorMsg('');
+          })
+          .catch(() => setStatus('點擊播放'));
+      };
+    }
+
+    audio.onwaiting = () => setStatus('緩衝中...');
+    audio.onplaying = () => setStatus('播放中');
+    audio.onended = () => setStatus('播放結束');
+    audio.onerror = () => {
+      setErrorMsg(`錯誤: ${audio.error?.message || '未知錯誤'}`);
+      setStatus('播放錯誤');
+    };
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [currentEpisode?.id, currentEpisode?.audioUrl, currentChannel?.id, currentChannel?.streamUrl]);
+
+  const handlePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (!audio.paused) {
+      audio.pause();
+      setStatus('已暫停');
+    } else {
+      audio
+        .play()
+        .then(() => setStatus('播放中'))
+        .catch(() => setStatus('播放失敗'));
+    }
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newOffset = Number(e.target.value);
+    isSeekingRef.current = true;
+    setStartOffset(newOffset);
+    if (audioRef.current) {
+      audioRef.current.currentTime = newOffset;
+    }
+  };
+
+  const handleTimeChangeEnd = () => {
+    isSeekingRef.current = false;
   };
 
   if (!currentChannel && !currentEpisode) {
-    return null;
+    return (
+      <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+        <p>底部播放器區域</p>
+      </div>
+    );
   }
 
   return (
-    <div className="player-bar p-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm truncate">
-              {currentChannel?.name || currentEpisode?.title}
-            </h3>
-            <p className="text-xs text-gray-500 truncate">
-              {currentChannel?.description || currentEpisode?.description}
-            </p>
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: 'white',
+        padding: '16px',
+        borderTop: '2px solid #d40000',
+        zIndex: 50,
+      }}
+    >
+      <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 'bold' }}>{getDisplayName()}</div>
+            <div style={{ fontSize: '12px', color: '#666' }}>{getDisplayDesc()}</div>
+            <div style={{ fontSize: '12px', color: '#d40000' }}>{status}</div>
+            {errorMsg && <div style={{ fontSize: '10px', color: '#999' }}>{errorMsg}</div>}
           </div>
-
           <button
-            onClick={togglePlay}
-            className="w-12 h-12 rounded-full bg-rthk-red text-white flex items-center justify-center flex-shrink-0 ml-4"
+            onClick={handlePlay}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              background: '#d40000',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              marginLeft: '12px',
+            }}
           >
-            {isPlaying ? (
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-              </svg>
-            ) : (
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            )}
+            {isPaused ? '▶' : '⏸'}
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">{formatTime(currentTime)}</span>
-          <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-rthk-red transition-all duration-200"
-              style={{
-                width: `${currentEpisode ? (currentTime / (currentEpisode.duration || 1)) * 100 : 0}%`,
-              }}
-            />
+        {currentEpisode && (
+          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: '#666', minWidth: '40px' }}>
+                {formatTime(startOffset)}
+              </span>
+              <input
+                type='range'
+                min='0'
+                max={hlsDuration || currentEpisode.duration || 3600}
+                value={startOffset}
+                onChange={handleTimeChange}
+                onMouseUp={handleTimeChangeEnd}
+                onTouchEnd={handleTimeChangeEnd}
+                style={{ flex: 1, cursor: 'pointer' }}
+              />
+              <span
+                style={{ fontSize: '12px', color: '#666', minWidth: '40px', textAlign: 'right' }}
+              >
+                {formatTime(hlsDuration || currentEpisode.duration || 3600)}
+              </span>
+            </div>
           </div>
-          <span className="text-xs text-gray-500">
-            {formatTime(currentEpisode?.duration || 0)}
-          </span>
-        </div>
+        )}
+
+        <audio ref={audioRef} style={{ display: 'none' }} />
       </div>
     </div>
   );

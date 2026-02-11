@@ -12,6 +12,8 @@
     "format": "prettier --write src",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
+    "pages:dev": "vite preview",
+    "pages:deploy": "npm run build && wrangler pages deploy dist",
     "workers:dev": "wrangler dev",
     "workers:deploy": "wrangler deploy",
     "workers:build": "esbuild workers/src/index.ts --bundle --outfile=dist/workers.js --format=esm --loader:.wasm=file"
@@ -21,6 +23,7 @@
     "cheerio": "^1.2.0",
     "clsx": "^2.0.0",
     "dayjs": "^1.11.10",
+    "hls.js": "^1.6.15",
     "howler": "^2.2.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

@@ -26,14 +26,37 @@ export default function AudioPlayer() {
   const hlsRef = useRef<Hls | null>(null);
   const isPlayingRef = useRef(false);
   const isSeekingRef = useRef(false);
+  const pollingTimerRef = useRef<number | null>(null);
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [duration, setDuration] = useState(0);
-  // Force update for UI refresh
-  const [, setTick] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
 
   const lastEpisodeIdRef = useRef<string>('');
   const isLive = !currentEpisode && currentChannel;
+
+  // Start polling for timeline update
+  const startPolling = useCallback(() => {
+    if (pollingTimerRef.current) {
+      clearInterval(pollingTimerRef.current);
+    }
+
+    pollingTimerRef.current = window.setInterval(() => {
+      const audio = audioRef.current;
+      if (audio && !audio.paused && !isSeekingRef.current) {
+        const time = audio.currentTime;
+        setCurrentTime(time);
+      }
+    }, 100); // Update every 100ms for smooth timeline
+  }, []);
+
+  // Stop polling
+  const stopPolling = useCallback(() => {
+    if (pollingTimerRef.current) {
+      clearInterval(pollingTimerRef.current);
+      pollingTimerRef.current = null;
+    }
+  }, []);
 
   // Create audio element once
   useEffect(() => {
@@ -51,30 +74,29 @@ export default function AudioPlayer() {
         const paused = audioRef.current.paused;
         const current = audioRef.current.currentTime;
         console.log('[Player] timeupdate:', current.toFixed(1), 'paused:', paused);
-        // Force UI update for timeline
-        setTick(t => t + 1);
+        if (!paused) {
+          setCurrentTime(current);
+        }
       }
     };
 
     const handlePlay = () => {
       console.log('[Player] play event');
       isPlayingRef.current = true;
-      // 强制刷新播放状态
-      audio.dispatchEvent(new Event('play'));
+      startPolling();
     };
 
     const handlePause = () => {
       console.log('[Player] pause event');
       isPlayingRef.current = false;
-      // 强制刷新播放状态
-      audio.dispatchEvent(new Event('pause'));
+      stopPolling();
     };
 
     const handleEnded = () => {
       console.log('[Player] ended');
       isPlayingRef.current = false;
-      // 强制刷新播放状态
-      audio.dispatchEvent(new Event('ended'));
+      stopPolling();
+      setCurrentTime(0);
     };
 
     const handleLoadedMetadata = () => {
@@ -82,7 +104,7 @@ export default function AudioPlayer() {
       if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
       }
-      setTick(t => t + 1);
+      setCurrentTime(audio.currentTime);
     };
 
     const handleError = () => {
@@ -123,29 +145,25 @@ export default function AudioPlayer() {
     console.log('[Player] Toggle click, currently paused:', audio.paused);
 
     if (audio.paused) {
-      // 立即更新 UI - 在调用 play() 之前
       isPlayingRef.current = true;
-      setTick(t => t + 1);
       console.log('[Player] Calling play()');
       audio
         .play()
         .then(() => {
           console.log('[Player] play() succeeded');
-          setTick(t => t + 1);
+          startPolling();
         })
         .catch((err: any) => {
           console.log('[Player] play() failed:', err.message || err);
           isPlayingRef.current = false;
-          setTick(t => t + 1);
         });
     } else {
-      // 立即更新 UI - 在调用 pause() 之前
       isPlayingRef.current = false;
-      setTick(t => t + 1);
+      stopPolling();
       console.log('[Player] Calling pause()');
       audio.pause();
     }
-  }, []);
+  }, [startPolling, stopPolling]);
 
   // Seek
   const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -271,7 +289,7 @@ export default function AudioPlayer() {
           .play()
           .then(() => {
             console.log('[Player] Auto-play succeeded');
-            setTick(t => t + 1);
+            startPolling();
           })
           .catch((err: any) => {
             // Ignore channel closed errors from extensions
@@ -316,7 +334,7 @@ export default function AudioPlayer() {
           .play()
           .then(() => {
             console.log('[Player] Native auto-play succeeded');
-            setTick(t => t + 1);
+            startPolling();
           })
           .catch((err: any) => {
             // Ignore channel closed errors from extensions
@@ -459,7 +477,7 @@ export default function AudioPlayer() {
               }}
             >
               <span style={{ color: 'white', fontSize: '10px' }}>
-                {audioRef.current && !audioRef.current.paused ? '⏸' : '▶'}
+                {isPlayingRef.current ? '⏸' : '▶'}
               </span>
             </button>
           </div>
@@ -478,13 +496,13 @@ export default function AudioPlayer() {
               }}
             >
               <span style={{ fontSize: '11px', color: '#666', minWidth: '40px' }}>
-                {formatTime(audioRef.current?.currentTime || 0)}
+                {formatTime(currentTime)}
               </span>
               <input
                 type='range'
                 min={0}
                 max={Math.max(duration, 1)}
-                value={audioRef.current?.currentTime || 0}
+                value={currentTime}
                 onChange={handleSeek}
                 style={{ flex: 1, height: '4px', cursor: 'pointer' }}
               />

@@ -82,6 +82,7 @@ export default function AudioPlayer() {
       if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
       }
+      setTick(t => t + 1);
     };
 
     const handleError = () => {
@@ -122,25 +123,27 @@ export default function AudioPlayer() {
     console.log('[Player] Toggle click, currently paused:', audio.paused);
 
     if (audio.paused) {
+      // 立即更新 UI - 在调用 play() 之前
       isPlayingRef.current = true;
+      setTick(t => t + 1);
       console.log('[Player] Calling play()');
       audio
         .play()
         .then(() => {
           console.log('[Player] play() succeeded');
-          // Force UI update
           setTick(t => t + 1);
         })
         .catch(err => {
           console.log('[Player] play() failed:', err);
           isPlayingRef.current = false;
+          setTick(t => t + 1);
         });
     } else {
+      // 立即更新 UI - 在调用 pause() 之前
       isPlayingRef.current = false;
+      setTick(t => t + 1);
       console.log('[Player] Calling pause()');
       audio.pause();
-      // Force UI update
-      setTick(t => t + 1);
     }
   }, []);
 
@@ -268,6 +271,7 @@ export default function AudioPlayer() {
           .play()
           .then(() => {
             console.log('[Player] Auto-play succeeded');
+            setTick(t => t + 1);
           })
           .catch(err => {
             console.log('[Player] Auto-play failed:', err);
@@ -292,6 +296,7 @@ export default function AudioPlayer() {
           .play()
           .then(() => {
             console.log('[Player] Native auto-play succeeded');
+            setTick(t => t + 1);
           })
           .catch(err => {
             console.log('[Player] Native auto-play failed:', err);

@@ -133,8 +133,8 @@ export default function AudioPlayer() {
           console.log('[Player] play() succeeded');
           setTick(t => t + 1);
         })
-        .catch(err => {
-          console.log('[Player] play() failed:', err);
+        .catch((err: any) => {
+          console.log('[Player] play() failed:', err.message || err);
           isPlayingRef.current = false;
           setTick(t => t + 1);
         });
@@ -273,15 +273,35 @@ export default function AudioPlayer() {
             console.log('[Player] Auto-play succeeded');
             setTick(t => t + 1);
           })
-          .catch(err => {
-            console.log('[Player] Auto-play failed:', err);
+          .catch((err: any) => {
+            // Ignore channel closed errors from extensions
+            if (err.message && err.message.includes('channel closed')) {
+              console.log('[Player] Extension channel closed (ignorable)');
+            } else {
+              console.log('[Player] Auto-play failed:', err);
+            }
           });
       });
 
       hls.on(Hls.Events.ERROR, (_e: any, data: any) => {
-        console.log('[Player] HLS error:', data.type, data.fatal);
+        console.log('[Player] HLS error:', data.type, data.fatal, data.details);
+        // Only restart on fatal errors that are recoverable
         if (data.fatal) {
-          hls.startLoad();
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.log('[Player] Network error, trying to recover...');
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log('[Player] Media error, trying to recover...');
+              hls.recoverMediaError();
+              break;
+            default:
+              // Cannot recover
+              console.log('[Player] Unrecoverable error, destroying HLS...');
+              hls.destroy();
+              break;
+          }
         }
       });
     } else {
@@ -298,8 +318,13 @@ export default function AudioPlayer() {
             console.log('[Player] Native auto-play succeeded');
             setTick(t => t + 1);
           })
-          .catch(err => {
-            console.log('[Player] Native auto-play failed:', err);
+          .catch((err: any) => {
+            // Ignore channel closed errors from extensions
+            if (err.message && err.message.includes('channel closed')) {
+              console.log('[Player] Extension channel closed (ignorable)');
+            } else {
+              console.log('[Player] Native auto-play failed:', err);
+            }
           });
       };
     }

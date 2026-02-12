@@ -163,8 +163,6 @@ export default function AudioPlayer() {
       audio.pause();
     }
   };
-
-  // Seek
   const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -287,6 +285,9 @@ export default function AudioPlayer() {
         audio
           .play()
           .then(() => {
+            console.log('[Player] Auto-play succeeded');
+            isPlayingRef.current = true;
+            setForceUpdate(t => t + 1);
             startPolling();
           })
           .catch((err: any) => {
@@ -332,6 +333,8 @@ export default function AudioPlayer() {
           .play()
           .then(() => {
             console.log('[Player] Native auto-play succeeded');
+            isPlayingRef.current = true;
+            setForceUpdate(t => t + 1);
             startPolling();
           })
           .catch((err: any) => {

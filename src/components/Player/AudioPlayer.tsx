@@ -31,7 +31,9 @@ export default function AudioPlayer() {
   const [isExpanded, setIsExpanded] = useState(true);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [, setForceUpdate] = useState(0);
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  useEffect(() => {}, [forceUpdate]);
 
   const lastEpisodeIdRef = useRef<string>('');
   const isLive = !currentEpisode && currentChannel;
@@ -132,11 +134,11 @@ export default function AudioPlayer() {
   }, []);
 
   // Play/Pause toggle
-  const handlePlayPause = useCallback(() => {
+  const handlePlayPause = () => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    console.log('[Player] Toggle click, currently paused:', audio.paused);
+    console.log('[Player] Toggle click, paused:', audio.paused);
 
     if (audio.paused) {
       isPlayingRef.current = true;
@@ -160,7 +162,7 @@ export default function AudioPlayer() {
       console.log('[Player] Calling pause()');
       audio.pause();
     }
-  }, [startPolling, stopPolling]);
+  };
 
   // Seek
   const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

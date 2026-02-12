@@ -31,6 +31,7 @@ export default function AudioPlayer() {
   const [isExpanded, setIsExpanded] = useState(true);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [, setForceUpdate] = useState(0);
 
   const lastEpisodeIdRef = useRef<string>('');
   const isLive = !currentEpisode && currentChannel;
@@ -139,6 +140,7 @@ export default function AudioPlayer() {
 
     if (audio.paused) {
       isPlayingRef.current = true;
+      setForceUpdate(t => t + 1);
       console.log('[Player] Calling play()');
       audio
         .play()
@@ -149,9 +151,11 @@ export default function AudioPlayer() {
         .catch((err: any) => {
           console.log('[Player] play() failed:', err.message || err);
           isPlayingRef.current = false;
+          setForceUpdate(t => t + 1);
         });
     } else {
       isPlayingRef.current = false;
+      setForceUpdate(t => t + 1);
       stopPolling();
       console.log('[Player] Calling pause()');
       audio.pause();

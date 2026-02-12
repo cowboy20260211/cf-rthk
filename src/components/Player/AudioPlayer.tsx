@@ -35,16 +35,6 @@ export default function AudioPlayer() {
   const lastEpisodeIdRef = useRef<string>('');
   const isLive = !currentEpisode && currentChannel;
 
-  // Debug: log currentTime changes
-  useEffect(() => {
-    console.log('[Player] currentTime changed:', currentTime);
-  }, [currentTime]);
-
-  // Debug: log duration changes
-  useEffect(() => {
-    console.log('[Player] duration changed:', duration);
-  }, [duration]);
-
   // Start polling for timeline update
   const startPolling = useCallback(() => {
     if (pollingTimerRef.current) {
@@ -53,14 +43,8 @@ export default function AudioPlayer() {
 
     pollingTimerRef.current = window.setInterval(() => {
       const audio = audioRef.current;
-      if (audio) {
-        const time = audio.currentTime;
-        const paused = audio.paused;
-        console.log('[Player] Polling:', time.toFixed(1), 'paused:', paused, 'duration:', duration);
-        if (!paused && !isSeekingRef.current) {
-          setCurrentTime(time);
-          console.log('[Player] Set currentTime:', time.toFixed(1));
-        }
+      if (audio && !audio.paused && !isSeekingRef.current) {
+        setCurrentTime(audio.currentTime);
       }
     }, 100);
   }, []);
@@ -85,13 +69,8 @@ export default function AudioPlayer() {
 
     // Time update - fires every ~250ms during playback
     const handleTimeUpdate = () => {
-      if (audioRef.current) {
-        const paused = audioRef.current.paused;
-        const current = audioRef.current.currentTime;
-        console.log('[Player] timeupdate:', current.toFixed(1), 'paused:', paused);
-        if (!paused) {
-          setCurrentTime(current);
-        }
+      if (audioRef.current && !audioRef.current.paused) {
+        setCurrentTime(audioRef.current.currentTime);
       }
     };
 
@@ -115,14 +94,10 @@ export default function AudioPlayer() {
     };
 
     const handleLoadedMetadata = () => {
-      console.log('[Player] metadata loaded, duration:', audio.duration);
       if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
-        console.log('[Player] Set metadata duration:', audio.duration);
       }
-      const time = audio.currentTime;
-      setCurrentTime(time);
-      console.log('[Player] Set initial currentTime:', time);
+      setCurrentTime(audio.currentTime);
     };
 
     const handleError = () => {
@@ -298,17 +273,14 @@ export default function AudioPlayer() {
         // Set duration from HLS metadata
         if (hlsDuration > 0) {
           setDuration(hlsDuration);
-          console.log('[Player] Set duration:', hlsDuration);
         }
 
         if (!isLive && currentEpisode) {
           audio.currentTime = currentEpisode.startTime || 0;
-          console.log('[Player] Set startTime:', currentEpisode.startTime);
         }
         audio
           .play()
           .then(() => {
-            console.log('[Player] Auto-play succeeded, starting poll');
             startPolling();
           })
           .catch((err: any) => {

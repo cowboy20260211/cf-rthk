@@ -1,44 +1,14 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { usePlayer } from '../../stores/PlayerContext';
 import { useFavorite } from '../../stores/FavoriteContext';
 import { RTHK_LIVE_STREAMS } from '../../services/rthk';
-import { fetchPopularPrograms, fetchCurrentPlaying, type Program } from '../../services/rthkApi';
-
-interface LiveProgramInfo {
-  program: string;
-  host: string;
-}
+import rthkApi from '../../services/rthkApi';
+import type { Program } from '../../services/rthkApi';
 
 export default function Home() {
   const { currentChannel, setChannel } = usePlayer();
   const { favorites } = useFavorite();
-  const [popularPrograms, setPopularPrograms] = useState<Program[]>([]);
-  const [liveProgramInfo, setLiveProgramInfo] = useState<Record<string, LiveProgramInfo>>({});
-
-  useEffect(() => {
-    fetchPopularPrograms()
-      .then(programs => {
-        setPopularPrograms(programs.slice(0, 4));
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const channels = ['radio1', 'radio2', 'radio5'];
-    channels.forEach(channelId => {
-      fetchCurrentPlaying(channelId)
-        .then(info => {
-          if (info) {
-            setLiveProgramInfo(prev => ({
-              ...prev,
-              [channelId]: { program: info.program, host: info.host },
-            }));
-          }
-        })
-        .catch(() => {});
-    });
-  }, []);
+  const popularPrograms = rthkApi.getPopularPrograms().slice(0, 4);
 
   const liveChannels = [
     {
@@ -111,12 +81,6 @@ export default function Home() {
               >
                 {currentChannel?.id === channel.id ? '✅ 正在收聽' : '▶ 開始收聽'}
               </button>
-              {liveProgramInfo[channel.id] && (
-                <p className='text-xs text-rthk-red mt-2 font-medium'>
-                  現正播放: {liveProgramInfo[channel.id].program}
-                  {liveProgramInfo[channel.id].host && ` - ${liveProgramInfo[channel.id].host}`}
-                </p>
-              )}
             </div>
           ))}
         </div>

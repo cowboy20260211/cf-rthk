@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
 import { usePlayer } from '../../stores/PlayerContext';
-import { RTHK_LIVE_STREAMS, getLiveStreamFallbackUrls } from '../../services/rthk';
-import { getFallbackUrls, fetchCurrentLiveProgram } from '../../services/rthkApi';
+import { RTHK_LIVE_STREAMS } from '../../services/rthk';
 
 interface Episode {
   id: string;
@@ -14,7 +13,6 @@ interface Episode {
   duration?: number;
   audioUrl?: string;
   startTime?: number;
-  programTitle?: string;
 }
 
 export default function AudioPlayer() {
@@ -29,39 +27,23 @@ export default function AudioPlayer() {
   const isPlayingRef = useRef(false);
   const isSeekingRef = useRef(false);
   const pollingTimerRef = useRef<number | null>(null);
-  const fallbackIndexRef = useRef(0);
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [liveProgramInfo, setLiveProgramInfo] = useState<{
-    program: string;
-    host: string;
-    time: string;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
 
   const lastEpisodeIdRef = useRef<string>('');
   const isLive = !currentEpisode && currentChannel;
 
+  // Debug: log currentTime changes
   useEffect(() => {
-    if (currentChannel?.id) {
-      console.log('[AudioPlayer] Fetching live program for channel:', currentChannel.id);
-      fetchCurrentLiveProgram(currentChannel.id)
-        .then(info => {
-          console.log('[AudioPlayer] Live program info:', info);
-          setLiveProgramInfo(info);
-        })
-        .catch(err => {
-          console.error('[AudioPlayer] Failed to fetch live program:', err);
-          setLiveProgramInfo(null);
-        });
-    } else {
-      setLiveProgramInfo(null);
-    }
-  }, [currentChannel?.id]);
+    console.log('[Player] currentTime changed:', currentTime);
+  }, [currentTime]);
+
+  // Debug: log duration changes
+  useEffect(() => {
+    console.log('[Player] duration changed:', duration);
+  }, [duration]);
 
   // Start polling for timeline update
   const startPolling = useCallback(() => {
@@ -74,8 +56,10 @@ export default function AudioPlayer() {
       if (audio) {
         const time = audio.currentTime;
         const paused = audio.paused;
+        console.log('[Player] Polling:', time.toFixed(1), 'paused:', paused, 'duration:', duration);
         if (!paused && !isSeekingRef.current) {
           setCurrentTime(time);
+          console.log('[Player] Set currentTime:', time.toFixed(1));
         }
       }
     }, 100);
@@ -93,6 +77,7 @@ export default function AudioPlayer() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    console.log('[Player] Create audio');
     const audio = new Audio();
     audio.crossOrigin = 'anonymous';
     audio.volume = 1;
@@ -103,6 +88,7 @@ export default function AudioPlayer() {
       if (audioRef.current) {
         const paused = audioRef.current.paused;
         const current = audioRef.current.currentTime;
+        console.log('[Player] timeupdate:', current.toFixed(1), 'paused:', paused);
         if (!paused) {
           setCurrentTime(current);
         }
@@ -110,35 +96,38 @@ export default function AudioPlayer() {
     };
 
     const handlePlay = () => {
+      console.log('[Player] play event');
       isPlayingRef.current = true;
-      setIsPlaying(true);
       startPolling();
     };
 
     const handlePause = () => {
+      console.log('[Player] pause event');
       isPlayingRef.current = false;
-      setIsPlaying(false);
       stopPolling();
     };
 
     const handleEnded = () => {
+      console.log('[Player] ended');
       isPlayingRef.current = false;
-      setIsPlaying(false);
       stopPolling();
       setCurrentTime(0);
     };
 
     const handleLoadedMetadata = () => {
+      console.log('[Player] metadata loaded, duration:', audio.duration);
       if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
+        console.log('[Player] Set metadata duration:', audio.duration);
       }
       const time = audio.currentTime;
       setCurrentTime(time);
+      console.log('[Player] Set initial currentTime:', time);
     };
 
     const handleError = () => {
+      console.log('[Player] error:', audio.error);
       isPlayingRef.current = false;
-      setIsPlaying(false);
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -149,6 +138,7 @@ export default function AudioPlayer() {
     audio.addEventListener('error', handleError);
 
     return () => {
+      console.log('[Player] cleanup');
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
@@ -170,22 +160,25 @@ export default function AudioPlayer() {
     const audio = audioRef.current;
     if (!audio) return;
 
+    console.log('[Player] Toggle click, currently paused:', audio.paused);
+
     if (audio.paused) {
       isPlayingRef.current = true;
+      console.log('[Player] Calling play()');
       audio
         .play()
         .then(() => {
-          setIsPlaying(true);
+          console.log('[Player] play() succeeded');
           startPolling();
         })
-        .catch(() => {
+        .catch((err: any) => {
+          console.log('[Player] play() failed:', err.message || err);
           isPlayingRef.current = false;
-          setIsPlaying(false);
         });
     } else {
       isPlayingRef.current = false;
-      setIsPlaying(false);
       stopPolling();
+      console.log('[Player] Calling pause()');
       audio.pause();
     }
   }, [startPolling, stopPolling]);
@@ -196,6 +189,7 @@ export default function AudioPlayer() {
     if (!audio) return;
 
     const time = parseFloat(e.target.value);
+    console.log('[Player] Seek to:', time);
     isSeekingRef.current = true;
     audio.currentTime = time;
 
@@ -223,15 +217,19 @@ export default function AudioPlayer() {
     let streamUrl = '';
     if (currentEpisode?.audioUrl) {
       streamUrl = currentEpisode.audioUrl;
+      console.log('[Player] Episode URL:', streamUrl);
     } else if (currentEpisode) {
       streamUrl =
         RTHK_LIVE_STREAMS[currentEpisode.channelId as keyof typeof RTHK_LIVE_STREAMS] ||
         RTHK_LIVE_STREAMS.radio1;
+      console.log('[Player] Fallback URL:', streamUrl);
     } else if (currentChannel?.streamUrl) {
       streamUrl = currentChannel.streamUrl;
+      console.log('[Player] Live URL:', streamUrl);
     }
 
     if (!streamUrl) {
+      console.log('[Player] No stream URL');
       return;
     }
 
@@ -239,10 +237,12 @@ export default function AudioPlayer() {
 
     // Don't reload if same content
     if (lastEpisodeIdRef.current === episodeId && audio.src === streamUrl) {
+      console.log('[Player] Same content, skip reload');
       return;
     }
     lastEpisodeIdRef.current = episodeId;
-    fallbackIndexRef.current = 0;
+
+    console.log('[Player] Loading:', episodeId);
 
     // Cleanup old HLS
     if (hlsRef.current) {
@@ -257,6 +257,7 @@ export default function AudioPlayer() {
     // Set initial duration from episode data (fallback)
     if (!isLive && currentEpisode) {
       const dur = currentEpisode.duration || 3600;
+      console.log('[Player] Episode duration:', dur);
       setDuration(dur);
       const start = currentEpisode.startTime || 0;
       audio.currentTime = start;
@@ -266,22 +267,15 @@ export default function AudioPlayer() {
 
     // Load stream
     if (streamUrl.includes('.m3u8') && Hls.isSupported()) {
-      const hls = new Hls(
-        isLive
-          ? {
-              maxBufferLength: 30,
-              maxMaxBufferLength: 60,
-            }
-          : { startPosition: currentEpisode?.startTime || 0 }
-      );
+      console.log('[Player] Using HLS');
+      const hls = new Hls(isLive ? {} : { startPosition: currentEpisode?.startTime || 0 });
       hlsRef.current = hls;
       hls.attachMedia(audio);
       hls.loadSource(streamUrl);
-      setError(null);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setError(null);
-        setRetryCount(0);
+        console.log('[Player] HLS manifest parsed');
+
         // Extract duration from HLS levels - 使用 totalduration 获取节目总时长
         let hlsDuration = 0;
         if (hls.levels && hls.levels.length > 0) {
@@ -291,10 +285,12 @@ export default function AudioPlayer() {
             // totalduration 是所有片段的总时长（以秒为单位）
             if (typeof details.totalduration === 'number' && details.totalduration > 0) {
               hlsDuration = details.totalduration;
+              console.log('[Player] HLS totalduration:', hlsDuration);
             }
             // 备选：使用 duration 属性
             else if (typeof details.duration === 'number' && details.duration > 0) {
               hlsDuration = details.duration;
+              console.log('[Player] HLS duration:', hlsDuration);
             }
           }
         }
@@ -302,102 +298,52 @@ export default function AudioPlayer() {
         // Set duration from HLS metadata
         if (hlsDuration > 0) {
           setDuration(hlsDuration);
+          console.log('[Player] Set duration:', hlsDuration);
         }
 
         if (!isLive && currentEpisode) {
           audio.currentTime = currentEpisode.startTime || 0;
+          console.log('[Player] Set startTime:', currentEpisode.startTime);
         }
         audio
           .play()
           .then(() => {
-            setIsPlaying(true);
+            console.log('[Player] Auto-play succeeded, starting poll');
             startPolling();
           })
-          .catch(() => {});
+          .catch((err: any) => {
+            // Ignore channel closed errors from extensions
+            if (err.message && err.message.includes('channel closed')) {
+              console.log('[Player] Extension channel closed (ignorable)');
+            } else {
+              console.log('[Player] Auto-play failed:', err);
+            }
+          });
       });
 
       hls.on(Hls.Events.ERROR, (_e: any, data: any) => {
-        console.error('[AudioPlayer] HLS Error:', data);
-
+        console.log('[Player] HLS error:', data.type, data.fatal, data.details);
+        // Only restart on fatal errors that are recoverable
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              console.log('[AudioPlayer] Network error, attempting recovery...');
-
-              if (isLive) {
-                const channelId = currentChannel?.id || 'radio2';
-                const fallbackLiveUrls = getLiveStreamFallbackUrls(channelId);
-
-                const currentUrl = hls.url || streamUrl;
-                const currentIndex = fallbackLiveUrls.indexOf(currentUrl);
-
-                if (currentIndex >= 0 && currentIndex < fallbackLiveUrls.length - 1) {
-                  const nextUrl = fallbackLiveUrls[currentIndex + 1];
-                  setRetryCount(0);
-                  setError(`主线路连接失败，正在切换备用线路...`);
-                  setTimeout(() => {
-                    hls.loadSource(nextUrl);
-                    hls.startLoad();
-                  }, 500);
-                } else {
-                  const maxRetries = 2;
-                  if (retryCount < maxRetries) {
-                    setRetryCount(prev => prev + 1);
-                    setError(`连接中断，正在重试 (${retryCount + 1}/${maxRetries})...`);
-                    setTimeout(
-                      () => {
-                        hls.loadSource(fallbackLiveUrls[0]);
-                        hls.startLoad();
-                      },
-                      1000 * (retryCount + 1)
-                    );
-                  } else {
-                    setError('直播连接失败，请检查网络后重试');
-                    hls.destroy();
-                  }
-                }
-              } else if (
-                currentEpisode?.audioUrl &&
-                currentEpisode.channelId &&
-                currentEpisode.programId &&
-                currentEpisode.publishDate
-              ) {
-                const fallbackUrls = getFallbackUrls(
-                  currentEpisode.channelId,
-                  currentEpisode.programId,
-                  currentEpisode.publishDate
-                );
-
-                const currentUrl = hls.url || streamUrl;
-                const currentIndex = fallbackUrls.indexOf(currentUrl);
-
-                if (currentIndex >= 0 && currentIndex < fallbackUrls.length - 1) {
-                  fallbackIndexRef.current = currentIndex + 1;
-                } else {
-                  fallbackIndexRef.current = 0;
-                }
-
-                if (fallbackIndexRef.current < fallbackUrls.length) {
-                  const nextUrl = fallbackUrls[fallbackIndexRef.current];
-                  if (nextUrl !== streamUrl) {
-                    hls.loadSource(nextUrl);
-                    hls.startLoad();
-                  }
-                }
-              } else {
-                hls.startLoad();
-              }
+              console.log('[Player] Network error, trying to recover...');
+              hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log('[Player] Media error, trying to recover...');
               hls.recoverMediaError();
               break;
             default:
+              // Cannot recover
+              console.log('[Player] Unrecoverable error, destroying HLS...');
               hls.destroy();
               break;
           }
         }
       });
     } else {
+      console.log('[Player] Using native audio');
       audio.src = streamUrl;
       audio.load();
       audio.oncanplay = () => {
@@ -407,18 +353,26 @@ export default function AudioPlayer() {
         audio
           .play()
           .then(() => {
-            setIsPlaying(true);
+            console.log('[Player] Native auto-play succeeded');
             startPolling();
           })
-          .catch(() => {});
+          .catch((err: any) => {
+            // Ignore channel closed errors from extensions
+            if (err.message && err.message.includes('channel closed')) {
+              console.log('[Player] Extension channel closed (ignorable)');
+            } else {
+              console.log('[Player] Native auto-play failed:', err);
+            }
+          });
       };
     }
-  }, [currentEpisode, currentChannel, retryCount]);
+  }, [currentEpisode, currentChannel]);
 
+  // Reset when nothing playing
   useEffect(() => {
     if (!currentChannel && !currentEpisode) {
+      console.log('[Player] Nothing playing, reset');
       isPlayingRef.current = false;
-      setIsPlaying(false);
       setDuration(0);
     }
   }, [currentChannel, currentEpisode]);
@@ -490,83 +444,31 @@ export default function AudioPlayer() {
             style={{
               position: 'absolute',
               left: '10px',
-              top: isLive ? '8px' : '4px',
-              width: 'calc(100% - 60px)',
+              top: isLive ? '12px' : '8px',
+              width: 'calc(100% - 50px)',
             }}
           >
-            {/* Live indicator */}
-            {isLive && (
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  marginBottom: '2px',
-                }}
-              >
-                <span
-                  style={{
-                    background: '#d40000',
-                    color: 'white',
-                    fontSize: '9px',
-                    fontWeight: 'bold',
-                    padding: '2px 6px',
-                    borderRadius: '3px',
-                  }}
-                >
-                  LIVE
-                </span>
-                <span style={{ fontSize: '9px', color: '#d40000', fontWeight: 'bold' }}>
-                  现正播放
-                </span>
-              </div>
-            )}
-
             <div
               style={{
-                fontSize: isLive ? '13px' : '14px',
+                fontSize: '14px',
                 fontWeight: 'bold',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}
             >
-              {currentEpisode
-                ? currentEpisode.programTitle || currentEpisode.title
-                : isLive
-                  ? `${currentChannel?.name || ''} - ${liveProgramInfo?.program || '未知'}`
-                  : liveProgramInfo?.program || currentChannel?.name || '未知'}
+              {currentEpisode?.title || currentChannel?.name || '未知'}
             </div>
-
-            {/* Second line: host or description */}
             <div
               style={{
-                fontSize: '11px',
+                fontSize: '12px',
                 color: '#666',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}
             >
-              {error ? (
-                <span style={{ color: '#d40000' }}>{error}</span>
-              ) : isLive ? (
-                <span>
-                  {liveProgramInfo?.host && (
-                    <span style={{ marginRight: '8px' }}>主持: {liveProgramInfo.host}</span>
-                  )}
-                  {liveProgramInfo?.time && (
-                    <span style={{ color: '#999' }}>{liveProgramInfo.time}</span>
-                  )}
-                </span>
-              ) : currentEpisode ? (
-                <span>
-                  {currentEpisode.programTitle && <span>{currentEpisode.programTitle} - </span>}
-                  {currentEpisode.publishDate || currentEpisode.description || ''}
-                </span>
-              ) : (
-                currentChannel?.description || ''
-              )}
+              {currentEpisode?.publishDate || currentChannel?.description || ''}
             </div>
           </div>
 
@@ -594,7 +496,9 @@ export default function AudioPlayer() {
                 boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
               }}
             >
-              <span style={{ color: 'white', fontSize: '10px' }}>{isPlaying ? '⏸' : '▶'}</span>
+              <span style={{ color: 'white', fontSize: '10px' }}>
+                {isPlayingRef.current ? '⏸' : '▶'}
+              </span>
             </button>
           </div>
 

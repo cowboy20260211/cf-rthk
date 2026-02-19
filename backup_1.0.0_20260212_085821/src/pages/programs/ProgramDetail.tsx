@@ -16,6 +16,8 @@ export default function ProgramDetail() {
   const isProgramFavorited = data ? favorites.some(f => f.programId === data.program.id) : false;
 
   const playEpisode = (ep: Episode) => {
+    console.log('Playing episode:', ep);
+    console.log('Episode duration:', ep.duration, 'seconds');
     const episodeDuration = ep.duration || 3600;
     setEpisode({
       id: ep.id,
@@ -28,7 +30,6 @@ export default function ProgramDetail() {
       audioUrl: ep.audioUrl || '',
       startTime: 0,
       endTime: episodeDuration,
-      programTitle: data?.program.title,
     });
   };
 
@@ -71,6 +72,7 @@ export default function ProgramDetail() {
 
           if (combinedResult.episodes.length > 0) {
             const latestEpisode = combinedResult.episodes[0];
+            console.log('Playing episode with duration:', latestEpisode.duration, 'seconds');
             playEpisode(latestEpisode);
           }
         } else {

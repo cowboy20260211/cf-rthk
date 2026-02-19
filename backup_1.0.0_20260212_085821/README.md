@@ -16,7 +16,6 @@
 - **样式**: Tailwind CSS
 - **状态管理**: Zustand
 - **音频播放**: HLS.js
-- **后端**: Cloudflare Pages Functions (CORS 代理)
 - **部署**: Cloudflare Pages
 
 ## 快速开始
@@ -29,24 +28,9 @@ npm install
 
 ### 开发环境
 
-#### 启动前端开发服务器
-
 \`\`\`bash
 npm run dev
 \`\`\`
-
-#### 启动 Cloudflare Workers 本地服务器（用于 CORS 代理）
-
-\`\`\`bash
-npm run workers:dev
-\`\`\`
-
-**注意**: 完整的本地开发需要同时运行两个服务器：
-
-1. Wrangler Workers (端口 8787) - 提供 CORS 代理
-2. Vite Dev Server (端口 3000) - 提供前端
-
-Vite 会自动将 `/api/*` 请求代理到 `localhost:8787`
 
 ### 构建
 
@@ -85,15 +69,7 @@ npx wrangler pages deploy dist --project-name=cf-rthk
 ```
 ├── .github/workflows/    # GitHub Actions
 │   └── deploy-pages.yml  # 自动部署配置
-├── functions/            # Cloudflare Pages Functions
-│   ├── api/              # API 端点
-│   │   ├── proxy/        # CORS 代理
-│   │   └── timetable.ts  # 节目时间表 API
-│   └── README.md         # API 文档
-├── workers/              # Cloudflare Workers
-│   ├── api/              # Workers API
-│   └── src/              # Workers 入口
-├── wrangler.toml        # Cloudflare 配置
+├── wrangler.toml        # Cloudflare Pages 配置
 ├── src/                  # 源代码
 │   ├── components/     # 组件
 │   │   ├── Player/      # 播放器组件
@@ -122,30 +98,6 @@ npx wrangler pages deploy dist --project-name=cf-rthk
 ### 访问地址
 
 - Production: https://cf-rthk.pages.dev
-
-## CORS 代理配置
-
-本项目使用 Cloudflare Pages Functions 作为 CORS 代理，解决了浏览器跨域访问 RTHK 网站的限制。
-
-### 代理端点
-
-- `/api/proxy/{url}` - 通用代理，获取任何 URL 并添加 CORS 头
-- `/api/timetable` - 节目时间表 API
-
-### 工作原理
-
-```
-浏览器 → Cloudflare Function (代理) → RTHK 网站 → 返回数据 (带 CORS 头)
-```
-
-### 优势
-
-- ✅ 完全控制代理服务，不依赖第三方
-- ✅ 自动缓存 5 分钟，性能优化
-- ✅ 15 秒超时保护，避免长时间等待
-- ✅ User-Agent 模拟，避免被网站拦截
-
-详细配置请查看 [PROXY_SETUP.md](./PROXY_SETUP.md)
 
 ## 许可证
 

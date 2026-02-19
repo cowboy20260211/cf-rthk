@@ -28,7 +28,6 @@ export interface Episode {
   audioUrl: string;
   startTime: number;
   endTime: number;
-  programTitle?: string;
 }
 
 export interface Favorite {

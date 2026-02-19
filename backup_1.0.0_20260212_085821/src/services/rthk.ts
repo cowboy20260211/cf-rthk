@@ -2,21 +2,12 @@ import type { LiveChannel, Program, Episode } from '../types';
 
 const RTHK_BASE = 'https://www.rthk.hk';
 
+// RTHK 真实直播流 (HLS m3u8格式)
 export const RTHK_LIVE_STREAMS: Record<string, string> = {
   radio1: 'https://rthkradio1-live.akamaized.net/hls/live/2035313/radio1/master.m3u8',
   radio2: 'https://rthkradio2-live.akamaized.net/hls/live/2040078/radio2/master.m3u8',
   radio5: 'https://rthkradio5-live.akamaized.net/hls/live/2040081/radio5/master.m3u8',
 };
-
-export const RTHK_LIVE_STREAMS_FALLBACK: Record<string, string[]> = {
-  radio1: ['https://rthkradio1-live.akamaized.net/hls/live/2035313/radio1/master.m3u8'],
-  radio2: ['https://rthkradio2-live.akamaized.net/hls/live/2040078/radio2/master.m3u8'],
-  radio5: ['https://rthkradio5-live.akamaized.net/hls/live/2040081/radio5/master.m3u8'],
-};
-
-export function getLiveStreamFallbackUrls(channelId: string): string[] {
-  return RTHK_LIVE_STREAMS_FALLBACK[channelId] || RTHK_LIVE_STREAMS_FALLBACK.radio2;
-}
 
 class RTHKService {
   private baseUrl = RTHK_BASE;

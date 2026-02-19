@@ -1,7 +1,6 @@
 export async function onRequest(context: any) {
-  const { request } = context;
+  const { request, params } = context;
   const url = new URL(request.url);
-  const path = url.pathname;
 
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -18,23 +17,23 @@ export async function onRequest(context: any) {
   }
 
   try {
-    const targetUrl = decodeURIComponent(path.replace('/api/proxy/', ''));
+    const fullPath = url.pathname.replace('/api/proxy/', '');
+    const targetUrl = decodeURIComponent(fullPath);
+
+    console.log(`[Proxy] Target URL: ${targetUrl}`);
 
     if (!targetUrl.startsWith('http')) {
-      return new Response(JSON.stringify({ error: 'Invalid URL' }), {
+      return new Response(JSON.stringify({ error: 'Invalid URL: ' + targetUrl }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log(`[Proxy] Fetching: ${targetUrl}`);
-
     const response = await fetch(targetUrl, {
       method: request.method,
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'zh-HK,zh-TW,zh-CN,en-US,en;q=0.5',
       },
     });

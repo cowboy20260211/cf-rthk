@@ -7,12 +7,12 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  deployments: write
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+    name: Deploy to Cloudflare Pages
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,30 +29,21 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Copy functions to dist
-        run: cp -r functions dist/
+      - name: List directory structure
+        run: |
+          echo "=== Project structure ==="
+          ls -la
+          echo ""
+          echo "=== functions directory ==="
+          ls -la functions/api/
+          echo ""
+          echo "=== dist directory ==="
+          ls -la dist/
 
-      - name: List dist contents
-        run: find dist -type f | head -50
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
       - name: Deploy to Cloudflare Pages
-        id: deployment
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: cf-rthk
-          directory: dist
+          command: pages deploy dist --project-name=cf-rthk
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}

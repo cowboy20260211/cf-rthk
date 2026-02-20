@@ -55,7 +55,6 @@ let popularProgramsCache: CacheEntry<Program[]> | null = null;
 async function fetchWithProxies(url: string): Promise<string | null> {
   try {
     const proxyUrl = `/api/proxy/${encodeURIComponent(url)}`;
-    console.log(`[fetchWithProxies] Using proxy: ${proxyUrl}`);
 
     const res = await fetch(proxyUrl, {
       signal: AbortSignal.timeout(15000),
@@ -63,12 +62,10 @@ async function fetchWithProxies(url: string): Promise<string | null> {
 
     if (res.ok) {
       const text = await res.text();
-      console.log(`[fetchWithProxies] Success, content length: ${text.length}`);
       return text;
     }
-    console.log(`[fetchWithProxies] Failed with status: ${res.status}`);
   } catch (error) {
-    console.error(`[fetchWithProxies] Error:`, error);
+    // Ignore errors
   }
   return null;
 }
@@ -267,9 +264,6 @@ export async function fetchEpisodesFromRTHK(
     // 按日期倒序排序
     episodes.sort((a, b) => b.publishDate.localeCompare(a.publishDate));
 
-    console.log(`[fetchEpisodesFromRTHK] 从RTHK网站获取到 ${episodes.length} 个节目集数`);
-
-    // 如果还是没有数据，使用备用方法
     if (episodes.length === 0) {
       return generateEpisodesFromSchedule(programId, channelId);
     }
@@ -361,7 +355,31 @@ export const rthkApi = {
       program = staticPrograms.find(p => p.id === programId);
     }
 
-    if (!program) return null;
+    if (!program) {
+      const cachedPopular = popularProgramsCache?.data || [];
+      const popularProgram = cachedPopular.find(
+        p => p.id === programIdNormalized && p.channelId === channelId
+      );
+      if (popularProgram) {
+        program = popularProgram;
+      }
+    }
+
+    if (!program) {
+      const channelNameMap: Record<string, string> = {
+        radio1: '第一台',
+        radio2: '第二台',
+        radio5: '第五台',
+      };
+      program = {
+        id: programIdNormalized,
+        title: programIdNormalized,
+        channel: channelNameMap[channelId] || channelId,
+        channelId: channelId,
+        description: '節目重溫',
+        episodeCount: 30,
+      };
+    }
 
     const episodes = await fetchEpisodesFromRTHK(channelId, program.id);
     return { program, episodes };
@@ -397,7 +415,6 @@ export async function fetchAllProgramsFromArchive(channelId?: string): Promise<P
   const cached = programCache.get(cacheKey);
   const isTestMode = window.location.href.includes('test-archive');
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION && !isTestMode) {
-    console.log(`[缓存命中] ${targetChannel} 节目列表`);
     return cached.data;
   }
 
@@ -408,22 +425,15 @@ export async function fetchAllProgramsFromArchive(channelId?: string): Promise<P
     try {
       const popularPrograms = await fetchPopularPrograms();
       popularPrograms.forEach(p => popularProgramIds.add(p.id));
-      console.log(`获取到 ${popularProgramIds.size} 个热门节目ID`);
     } catch (e) {
-      console.warn('获取热门节目失败，将不显示热门标识:', e);
+      // Ignore errors
     }
 
     const url = `https://www.rthk.hk/radio/${targetChannel}`;
 
-    console.log(`========== 开始获取 ${targetChannel} 节目列表 ==========`);
-    console.log(`URL: ${url}`);
-
     const html = await fetchWithProxies(url);
 
-    console.log(`页面长度: ${html?.length || 0}`);
-
     if (!html) {
-      console.log('无法获取节目列表，使用静态数据');
       const staticPrograms = PROGRAMS[targetChannel] || [];
       return staticPrograms.map(p => ({ ...p, isPopular: popularProgramIds.has(p.id) }));
     }
@@ -440,48 +450,12 @@ export async function fetchAllProgramsFromArchive(channelId?: string): Promise<P
     };
     const channelName = channelNameMap[targetChannel] || '未知頻道';
 
-    console.log(`========== 开始获取 ${targetChannel} 节目列表 ==========`);
-    console.log(`步骤1: 访问 ${url}`);
-    console.log(`页面长度: ${html.length}`);
-
     const seenIds = new Set<string>();
 
-    console.log(`步骤2: 查找 <div class="catupWrap clearfix">`);
     const catchupSection = $('div.catupWrap.clearfix, div.catupWrap');
-    console.log(`catupWrap 数量: ${catchupSection.length}`);
-
-    if (!catchupSection.length) {
-      console.log(
-        '%c=== catupWrap 不存在，展示整个页面内容 ===',
-        'color: red; font-size: 14px; font-weight: bold;'
-      );
-      console.log('%c=== 页面完整HTML (前20000字符) ===', 'color: red;');
-      console.log(html.substring(0, 20000));
-    }
 
     if (catchupSection.length) {
-      const htmlContent = catchupSection.html() || '';
-      console.log(
-        '%c=== catupWrap 完整内容 ===',
-        'color: blue; font-size: 14px; font-weight: bold;'
-      );
-      console.log(htmlContent);
-
-      console.log(
-        '%c=== catupWrap 内所有 <a> 链接 ===',
-        'color: green; font-size: 14px; font-weight: bold;'
-      );
-      const allLinksInCatchup = catchupSection.find('a');
-      console.log(`共 ${allLinksInCatchup.length} 个链接:`);
-
-      allLinksInCatchup.each((_: any, element) => {
-        const outerHtml = $(element).prop('outerHTML') || '';
-        console.log(outerHtml);
-      });
-
       const linksInCatchup = catchupSection.find('a[href*="/programme/"]');
-      console.log('%c=== programme 链接 ===', 'color: orange; font-size: 14px; font-weight: bold;');
-      console.log(`共 ${linksInCatchup.length} 个 programme 链接:`);
 
       linksInCatchup.each((_: any, element) => {
         const link = $(element).attr('href') || '';
@@ -515,15 +489,10 @@ export async function fetchAllProgramsFromArchive(channelId?: string): Promise<P
       });
     }
 
-    const popularCount = programs.filter(p => p.isPopular).length;
-    console.log(`========== ${channelName} 获取完成 ==========`);
-    console.log(`找到 ${programs.length} 个节目，其中 ${popularCount} 个热门`);
-
     programCache.set(cacheKey, { data: programs, timestamp: Date.now() });
 
     return programs;
   } catch (error) {
-    console.error('获取节目列表失败:', error);
     return [];
   }
 }
@@ -531,21 +500,15 @@ export async function fetchAllProgramsFromArchive(channelId?: string): Promise<P
 // Fetch popular programs from RTHK archive page
 export async function fetchPopularPrograms(): Promise<Program[]> {
   if (popularProgramsCache && Date.now() - popularProgramsCache.timestamp < CACHE_DURATION) {
-    console.log('[缓存命中] 热门节目列表');
     return popularProgramsCache.data;
   }
 
   try {
-    console.log('========== 开始从RTHK官网获取热门节目 ==========');
-
     const url = 'https://www.rthk.hk/archive';
-
-    console.log(`正在请求: ${url}`);
 
     const html = await fetchWithProxies(url);
 
     if (!html) {
-      console.log('无法获取热门节目数据，使用静态热门列表');
       return getStaticPopularPrograms();
     }
 
@@ -553,14 +516,10 @@ export async function fetchPopularPrograms(): Promise<Program[]> {
     const popularPrograms: Program[] = [];
     const seenIds = new Set<string>();
 
-    console.log('正在解析RTHK官网热门节目...');
-
     const programLinks = $('a[href*="/radio/radio"]').filter((_, el) => {
       const href = $(el).attr('href') || '';
       return href.includes('/programme/') && href.includes('/episode/');
     });
-
-    console.log(`找到 ${programLinks.length} 个节目链接`);
 
     const programIdToTitle: Record<string, string> = {
       morningsuite: '晨光第一線',
@@ -631,9 +590,6 @@ export async function fetchPopularPrograms(): Promise<Program[]> {
         channelName = '第五台';
       }
 
-      console.log(`${title}`);
-      console.log(`   ${programmeUrl}`);
-
       popularPrograms.push({
         id: programId,
         title: title,
@@ -646,17 +602,13 @@ export async function fetchPopularPrograms(): Promise<Program[]> {
       });
     });
 
-    console.log(`========== 从RTHK官网获取到 ${popularPrograms.length} 个热门节目 ==========`);
-
     if (popularPrograms.length > 0) {
       popularProgramsCache = { data: popularPrograms, timestamp: Date.now() };
       return popularPrograms;
     }
 
-    console.log('未找到热门节目，返回默认列表...');
     return getDefaultPopularPrograms();
   } catch (error) {
-    console.error('从RTHK官网获取热门节目失败:', error);
     return getDefaultPopularPrograms();
   }
 }
@@ -772,14 +724,12 @@ export async function fetchCurrentLiveProgram(
 
     const apiUrl = `https://www.rthk.hk/radio/getTimetable?d=${todayStr}&c=${channelId}`;
     const proxyUrl = `/api/proxy/${encodeURIComponent(apiUrl)}`;
-    console.log(`[fetchCurrentLiveProgram] Fetching: ${proxyUrl}`);
 
     const res = await fetch(proxyUrl, {
       signal: AbortSignal.timeout(15000),
     });
 
     if (!res.ok) {
-      console.error('[fetchCurrentLiveProgram] Fetch failed:', res.status);
       return null;
     }
 
@@ -788,12 +738,10 @@ export async function fetchCurrentLiveProgram(
     try {
       data = JSON.parse(text);
     } catch (e) {
-      console.error('[fetchCurrentLiveProgram] Parse error:', e);
       return null;
     }
 
     if (!data?.timetable || !Array.isArray(data.timetable)) {
-      console.error('[fetchCurrentLiveProgram] No timetable data');
       return null;
     }
 
@@ -827,10 +775,8 @@ export async function fetchCurrentLiveProgram(
     liveProgramCache.data = { channel: channelId, ...result };
     liveProgramCache.timestamp = now;
 
-    console.log(`[fetchCurrentLiveProgram] Result:`, result);
     return result;
   } catch (error) {
-    console.error('[fetchCurrentLiveProgram] Error:', error);
     return null;
   }
 }
@@ -846,7 +792,6 @@ export interface ProgramScheduleItem {
 export async function fetchDayProgramSchedule(channelId: string): Promise<ProgramScheduleItem[]> {
   try {
     const proxyUrl = `/api/proxy/${encodeURIComponent(`https://www.rthk.hk/timetable/${channelId}`)}`;
-    console.log(`[fetchDayProgramSchedule] Fetching: ${proxyUrl}`);
 
     let html = '';
     try {
@@ -857,7 +802,7 @@ export async function fetchDayProgramSchedule(channelId: string): Promise<Progra
         html = await res.text();
       }
     } catch (e) {
-      console.error('[fetchDayProgramSchedule] Error:', e);
+      // Ignore errors
     }
 
     if (!html) {
@@ -924,7 +869,6 @@ export async function fetchDayProgramSchedule(channelId: string): Promise<Progra
 
     return schedule;
   } catch (error) {
-    console.error('获取节目表失败:', error);
     return [];
   }
 }
@@ -964,7 +908,6 @@ export async function fetchRadioSchedule(channelId: string): Promise<RadioSchedu
 
   try {
     const proxyUrl = `/api/proxy/${encodeURIComponent(apiUrl)}`;
-    console.log(`[fetchRadioSchedule] Fetching: ${proxyUrl}`);
 
     const res = await fetch(proxyUrl, {
       signal: AbortSignal.timeout(15000),
@@ -974,11 +917,11 @@ export async function fetchRadioSchedule(channelId: string): Promise<RadioSchedu
       try {
         data = JSON.parse(text);
       } catch (e) {
-        console.error('[fetchRadioSchedule] Parse error:', e);
+        // Ignore parse errors
       }
     }
   } catch (e) {
-    console.error('[fetchRadioSchedule] Fetch error:', e);
+    // Ignore fetch errors
   }
 
   if (!data?.timetable) {
@@ -1039,10 +982,8 @@ export async function fetchCurrentPlaying(channelId: string): Promise<CurrentPla
 
   let data = null;
 
-  // 方法1: 尝试直接调用 /api/timetable
   try {
     const timetableUrl = `/api/timetable?d=${todayStr}&c=${channelId}`;
-    console.log(`[fetchCurrentPlaying] Trying timetable: ${timetableUrl}`);
 
     const res = await fetch(timetableUrl, {
       signal: AbortSignal.timeout(15000),
@@ -1051,18 +992,15 @@ export async function fetchCurrentPlaying(channelId: string): Promise<CurrentPla
       const text = await res.text();
       if (text.startsWith('{') || text.startsWith('[')) {
         data = JSON.parse(text);
-        console.log(`[fetchCurrentPlaying] Got timetable data`);
       }
     }
   } catch (e) {
-    console.log('[fetchCurrentPlaying] Timetable endpoint failed, trying proxy...');
+    // Try proxy next
   }
 
-  // 方法2: 尝试代理
   if (!data) {
     try {
       const proxyUrl = `/api/proxy/${encodeURIComponent(apiUrl)}`;
-      console.log(`[fetchCurrentPlaying] Trying proxy: ${proxyUrl}`);
 
       const res = await fetch(proxyUrl, {
         signal: AbortSignal.timeout(15000),
@@ -1072,16 +1010,13 @@ export async function fetchCurrentPlaying(channelId: string): Promise<CurrentPla
         if (text.startsWith('{') || text.startsWith('[')) {
           try {
             data = JSON.parse(text);
-            console.log(`[fetchCurrentPlaying] Got proxy data`);
           } catch (e) {
-            console.error('[fetchCurrentPlaying] Parse error:', e);
+            // Ignore parse errors
           }
-        } else {
-          console.log('[fetchCurrentPlaying] Response is not JSON');
         }
       }
     } catch (e) {
-      console.error('[fetchCurrentPlaying] Proxy error:', e);
+      // Ignore fetch errors
     }
   }
 

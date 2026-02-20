@@ -89,8 +89,8 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (path === '/api/timetable') {
-    const channel = url.searchParams.get('channel') || 'radio2';
-    const date = url.searchParams.get('date') || getTodayHK();
+    const channel = url.searchParams.get('channel') || url.searchParams.get('c') || 'radio2';
+    const date = url.searchParams.get('date') || url.searchParams.get('d') || getTodayHK();
     const apiUrl = `https://www.rthk.hk/radio/getTimetable?d=${date}&c=${channel}`;
 
     console.log(`[Timetable] Fetching: ${apiUrl}`);

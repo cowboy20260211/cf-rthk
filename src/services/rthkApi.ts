@@ -1313,23 +1313,50 @@ export async function fetchCurrentPlaying(channelId: string): Promise<CurrentPla
 
   let data = null;
 
+  // 方法1: 尝试直接调用 /api/timetable
   try {
-    const proxyUrl = `/api/proxy/${encodeURIComponent(apiUrl)}`;
-    console.log(`[fetchCurrentPlaying] Fetching: ${proxyUrl}`);
+    const timetableUrl = `/api/timetable?d=${todayStr}&c=${channelId}`;
+    console.log(`[fetchCurrentPlaying] Trying timetable: ${timetableUrl}`);
 
-    const res = await fetch(proxyUrl, {
+    const res = await fetch(timetableUrl, {
       signal: AbortSignal.timeout(15000),
     });
     if (res.ok) {
       const text = await res.text();
-      try {
+      if (text.startsWith('{') || text.startsWith('[')) {
         data = JSON.parse(text);
-      } catch (e) {
-        console.error('[fetchCurrentPlaying] Parse error:', e);
+        console.log(`[fetchCurrentPlaying] Got timetable data`);
       }
     }
   } catch (e) {
-    console.error('[fetchCurrentPlaying] Fetch error:', e);
+    console.log('[fetchCurrentPlaying] Timetable endpoint failed, trying proxy...');
+  }
+
+  // 方法2: 尝试代理
+  if (!data) {
+    try {
+      const proxyUrl = `/api/proxy/${encodeURIComponent(apiUrl)}`;
+      console.log(`[fetchCurrentPlaying] Trying proxy: ${proxyUrl}`);
+
+      const res = await fetch(proxyUrl, {
+        signal: AbortSignal.timeout(15000),
+      });
+      if (res.ok) {
+        const text = await res.text();
+        if (text.startsWith('{') || text.startsWith('[')) {
+          try {
+            data = JSON.parse(text);
+            console.log(`[fetchCurrentPlaying] Got proxy data`);
+          } catch (e) {
+            console.error('[fetchCurrentPlaying] Parse error:', e);
+          }
+        } else {
+          console.log('[fetchCurrentPlaying] Response is not JSON');
+        }
+      }
+    } catch (e) {
+      console.error('[fetchCurrentPlaying] Proxy error:', e);
+    }
   }
 
   if (!data?.timetable) {

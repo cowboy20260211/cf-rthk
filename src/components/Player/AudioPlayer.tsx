@@ -48,14 +48,11 @@ export default function AudioPlayer() {
 
   useEffect(() => {
     if (currentChannel?.id) {
-      console.log('[AudioPlayer] Fetching live program for channel:', currentChannel.id);
       fetchCurrentLiveProgram(currentChannel.id)
         .then(info => {
-          console.log('[AudioPlayer] Live program info:', info);
           setLiveProgramInfo(info);
         })
-        .catch(err => {
-          console.error('[AudioPlayer] Failed to fetch live program:', err);
+        .catch(() => {
           setLiveProgramInfo(null);
         });
     } else {
@@ -317,13 +314,9 @@ export default function AudioPlayer() {
       });
 
       hls.on(Hls.Events.ERROR, (_e: any, data: any) => {
-        console.error('[AudioPlayer] HLS Error:', data);
-
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              console.log('[AudioPlayer] Network error, attempting recovery...');
-
               if (isLive) {
                 const channelId = currentChannel?.id || 'radio2';
                 const fallbackLiveUrls = getLiveStreamFallbackUrls(channelId);

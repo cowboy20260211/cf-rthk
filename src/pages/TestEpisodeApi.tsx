@@ -28,7 +28,6 @@ export default function TestEpisodeApi() {
     setEpisodes([]);
     setLoading(true);
 
-    console.log(`========== 获取 ${channelId} 节目列表 ==========`);
     const data = await fetchAllProgramsFromArchive(channelId);
     setPrograms(data);
     setLoading(false);
@@ -39,11 +38,7 @@ export default function TestEpisodeApi() {
     setLoading(true);
     setEpisodes([]);
 
-    console.log(`========== 获取 ${program.title} 重温列表 ==========`);
-    console.log(`Channel: ${program.channelId}, ProgramID: ${program.id}`);
-
     const data = await fetchEpisodesFromRTHK(program.channelId, program.id);
-    console.log(`获取到 ${data.length} 个重温`);
     setEpisodes(data);
     setLoading(false);
   };

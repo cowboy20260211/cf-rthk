@@ -24,34 +24,18 @@ export default function TestPopularApi() {
     setPopularPrograms([]);
     setJsonOutput([]);
 
-    console.log('========== 开始测试热门节目API ==========');
-
     try {
       const programs = await fetchPopularPrograms();
 
-      console.log(`\n========== 获取到 ${programs.length} 个热门节目 ==========`);
-
-      // 输出每个节目的名称和URL
-      programs.forEach(program => {
-        console.log(`${program.title}`);
-        console.log(`   ${program.archiveUrl}`);
-      });
-
-      // 构建JSON数组
       const allProgramsJson: ProgramJson[] = programs.map(program => ({
         节目名称: program.title,
         链接: program.archiveUrl || '',
       }));
 
-      console.log('\n========== JSON数组输出 ==========');
-      console.log(JSON.stringify(allProgramsJson, null, 2));
-      console.log('\n========== 测试完成 ==========');
-
       setPopularPrograms(programs);
       setJsonOutput(allProgramsJson);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : '未知错误';
-      console.error('测试失败:', errorMsg);
       setError(errorMsg);
     } finally {
       setLoading(false);

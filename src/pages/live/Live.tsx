@@ -31,10 +31,7 @@ const channels = [
 export default function Live() {
   const { currentChannel, setChannel } = usePlayer();
 
-  console.log('Live page rendered, currentChannel:', currentChannel);
-
   const playChannel = (channel: (typeof channels)[0]) => {
-    console.log('playChannel called:', channel.name);
     const channelData = {
       id: channel.id,
       name: channel.name,
@@ -43,7 +40,6 @@ export default function Live() {
       logo: '',
       description: channel.description,
     };
-    console.log('Calling setChannel with:', channelData);
     setChannel(channelData);
   };
 

@@ -19,19 +19,8 @@ export default function TestScheduleApi() {
       .then(([scheduleData, playingData]) => {
         setSchedule(scheduleData);
         setCurrentPlaying(playingData);
-
-        console.log('========== 节目表JSON数组 ==========');
-        console.log(JSON.stringify(scheduleData, null, 2));
-        console.log('========== 共 ' + scheduleData.length + ' 个节目 ==========');
-
-        if (playingData) {
-          console.log('========== 正在直播 (独立API) ==========');
-          console.log(JSON.stringify(playingData, null, 2));
-        }
       })
-      .catch(err => {
-        console.error('获取节目表失败:', err);
-      })
+      .catch(() => {})
       .finally(() => {
         setLoading(false);
       });

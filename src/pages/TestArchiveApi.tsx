@@ -20,10 +20,6 @@ export default function TestArchiveApi() {
     setLoading(true);
     setPrograms([]);
 
-    const channel = channels.find(c => c.id === channelId);
-    console.log(`========== 开始获取 ${channel?.name} 节目列表 ==========`);
-    console.log(`步骤1: 访问 https://www.rthk.hk/radio/${channelId}`);
-
     const data = await fetchAllProgramsFromArchive(channelId);
     setPrograms(data);
     setLoading(false);

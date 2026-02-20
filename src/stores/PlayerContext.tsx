@@ -21,13 +21,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [volume, setVolume] = useState(1);
 
   const setChannel = useCallback((channel: LiveChannel | null) => {
-    console.log('PlayerContext setChannel:', channel);
     setCurrentChannel(channel);
     setCurrentEpisode(null);
   }, []);
 
   const setEpisode = useCallback((episode: Episode | null) => {
-    console.log('PlayerContext setEpisode:', episode);
     setCurrentEpisode(episode);
     setCurrentChannel(null);
   }, []);

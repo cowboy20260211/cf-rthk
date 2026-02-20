@@ -31,14 +31,10 @@ export default function Programs() {
 
     fetchAllProgramsFromArchive(selectedChannel)
       .then(scrapedPrograms => {
-        console.log('获取到的重温节目:', scrapedPrograms);
-        const popularCount = scrapedPrograms.filter(p => p.isPopular).length;
-        console.log(`其中 ${popularCount} 个热门`);
         setAllPrograms(scrapedPrograms);
         setHasMore(scrapedPrograms.length > PAGE_SIZE);
       })
-      .catch(error => {
-        console.error('获取重温列表失败，使用备用数据:', error);
+      .catch(() => {
         rthkApi.getAllProgramsPaged(selectedChannel, 1, 100).then(result => {
           setAllPrograms(result.programs);
           setHasMore(result.hasMore);
@@ -194,9 +190,16 @@ export default function Programs() {
                     )}
                   </div>
                   <p className='text-sm text-gray-500 mt-1'>{program.description}</p>
-                  <p className='text-xs text-gray-400 mt-1'>
-                    {channels.find(c => c.id === program.channelId)?.name} | {program.schedule}
-                  </p>
+                  {program.schedule && (
+                    <p className='text-xs text-gray-400 mt-1'>
+                      {channels.find(c => c.id === program.channelId)?.name} | {program.schedule}
+                    </p>
+                  )}
+                  {!program.schedule && (
+                    <p className='text-xs text-gray-400 mt-1'>
+                      {channels.find(c => c.id === program.channelId)?.name}
+                    </p>
+                  )}
                   <p className='text-xs text-gray-400 mt-1'>{program.episodeCount || 30} 集</p>
                 </div>
               </Link>

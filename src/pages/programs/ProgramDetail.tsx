@@ -141,7 +141,9 @@ export default function ProgramDetail() {
         </div>
         <p className='text-sm text-gray-500 mt-1'>{channelName}</p>
         <p className='text-sm text-gray-600 mt-2'>{program.description}</p>
-        <p className='text-xs text-gray-400 mt-2'>播出時間: {program.schedule}</p>
+        {program.schedule && (
+          <p className='text-xs text-gray-400 mt-2'>播出時間: {program.schedule}</p>
+        )}
         <p className='text-xs text-gray-400 mt-1'>共 {episodes.length} 集</p>
       </div>
 

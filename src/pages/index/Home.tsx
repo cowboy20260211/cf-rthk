@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { usePlayer } from '../../stores/PlayerContext';
 import { useFavorite } from '../../stores/FavoriteContext';
@@ -10,21 +10,33 @@ interface LiveProgramInfo {
   host: string;
 }
 
+// 计算下次更新时间（正点或30分）
+function getNextUpdateTime(): number {
+  const now = new Date();
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+  const ms = now.getMilliseconds();
+
+  let nextMinute: number;
+  if (minutes < 30) {
+    nextMinute = 30;
+  } else {
+    nextMinute = 60; // 下一个小时的00分
+  }
+
+  const msUntilNext = (nextMinute - minutes) * 60 * 1000 - seconds * 1000 - ms;
+  return msUntilNext;
+}
+
 export default function Home() {
   const { currentChannel, setChannel } = usePlayer();
   const { favorites } = useFavorite();
   const [popularPrograms, setPopularPrograms] = useState<Program[]>([]);
   const [liveProgramInfo, setLiveProgramInfo] = useState<Record<string, LiveProgramInfo>>({});
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [networkError, setNetworkError] = useState(false);
 
-  useEffect(() => {
-    fetchPopularPrograms()
-      .then(programs => {
-        setPopularPrograms(programs.slice(0, 4));
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
+  const updateLiveProgramInfo = useCallback(() => {
     const channels = ['radio1', 'radio2', 'radio5'];
     channels.forEach(channelId => {
       fetchCurrentPlaying(channelId)
@@ -38,7 +50,34 @@ export default function Home() {
         })
         .catch(() => {});
     });
+    setLastUpdate(new Date());
   }, []);
+
+  useEffect(() => {
+    fetchPopularPrograms()
+      .then(programs => {
+        setPopularPrograms(programs.slice(0, 4));
+        setNetworkError(false);
+      })
+      .catch(() => {
+        setNetworkError(true);
+      });
+  }, []);
+
+  useEffect(() => {
+    updateLiveProgramInfo();
+
+    const scheduleNextUpdate = () => {
+      const msUntilNext = getNextUpdateTime();
+      return setTimeout(() => {
+        updateLiveProgramInfo();
+        scheduleNextUpdate();
+      }, msUntilNext);
+    };
+
+    const timerId = scheduleNextUpdate();
+    return () => clearTimeout(timerId);
+  }, [updateLiveProgramInfo]);
 
   const liveChannels = [
     {
@@ -87,9 +126,16 @@ export default function Home() {
   return (
     <div className='p-4 space-y-6'>
       <section>
-        <h2 className='text-xl font-bold mb-4 flex items-center gap-2'>
-          <span>📻</span> 直播頻道
-        </h2>
+        <div className='flex items-center justify-between mb-4'>
+          <h2 className='text-xl font-bold flex items-center gap-2'>
+            <span>📻</span> 直播頻道
+          </h2>
+          {lastUpdate && (
+            <span className='text-xs text-gray-400'>
+              更新: {lastUpdate.toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+        </div>
         <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
           {liveChannels.map(channel => (
             <div key={channel.id} className='card'>
@@ -131,26 +177,33 @@ export default function Home() {
             查看全部 →
           </Link>
         </div>
-        <div className='space-y-3'>
-          {popularPrograms.map((program: Program) => (
-            <Link
-              key={program.id}
-              to={`/programs/${program.channelId}/${program.id}`}
-              className='card flex gap-4 hover:bg-gray-50'
-            >
-              <div className='w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center'>
-                <span className='text-2xl'>📻</span>
-              </div>
-              <div className='flex-1 min-w-0'>
-                <h3 className='font-bold truncate'>{program.title}</h3>
-                <p className='text-sm text-gray-500 mt-1'>{program.description}</p>
-                <p className='text-xs text-gray-400 mt-2'>
-                  {getChannelName(program.channelId)} | {program.episodeCount || 0} 集
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {networkError || popularPrograms.length === 0 ? (
+          <div className='card text-center py-8 text-gray-500'>
+            <p>無法獲取熱門節目資訊</p>
+            <p className='text-sm text-gray-400 mt-2'>請檢查網絡連接或稍後再試</p>
+          </div>
+        ) : (
+          <div className='space-y-3'>
+            {popularPrograms.map((program: Program) => (
+              <Link
+                key={program.id}
+                to={`/programs/${program.channelId}/${program.id}`}
+                className='card flex gap-4 hover:bg-gray-50'
+              >
+                <div className='w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center'>
+                  <span className='text-2xl'>📻</span>
+                </div>
+                <div className='flex-1 min-w-0'>
+                  <h3 className='font-bold truncate'>{program.title}</h3>
+                  <p className='text-sm text-gray-500 mt-1'>{program.description}</p>
+                  <p className='text-xs text-gray-400 mt-2'>
+                    {getChannelName(program.channelId)} | {program.episodeCount || 0} 集
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       <section>

@@ -15,8 +15,11 @@ export async function onRequest(context) {
   const channel = url.searchParams.get('channel') || 'radio2';
   const date = url.searchParams.get('date') || getTodayHK();
 
+  console.log(`[Timetable] Channel: ${channel}, Date: ${date}`);
+
   try {
     const apiUrl = `https://www.rthk.hk/radio/getTimetable?d=${date}&c=${channel}`;
+
     const response = await fetch(apiUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -24,6 +27,8 @@ export async function onRequest(context) {
     });
 
     const text = await response.text();
+
+    console.log(`[Timetable] Success: ${response.status}`);
 
     return new Response(text, {
       status: response.status,
@@ -33,6 +38,7 @@ export async function onRequest(context) {
       },
     });
   } catch (error) {
+    console.error('[Timetable] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

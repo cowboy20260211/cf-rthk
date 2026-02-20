@@ -32,6 +32,9 @@ jobs:
       - name: Copy functions to dist
         run: cp -r functions dist/
 
+      - name: List dist contents
+        run: find dist -type f | head -50
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

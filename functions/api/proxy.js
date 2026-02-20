@@ -16,29 +16,36 @@ export async function onRequest(context) {
   const targetUrl = decodeURIComponent(path.replace('/api/proxy/', ''));
 
   if (!targetUrl.startsWith('http')) {
-    return new Response(JSON.stringify({ error: 'Invalid URL' }), {
+    return new Response(JSON.stringify({ error: 'Invalid URL', targetUrl }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
+  console.log(`[Proxy] Fetching: ${targetUrl}`);
+
   try {
     const response = await fetch(targetUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
     });
 
+    const contentType = response.headers.get('Content-Type') || 'text/html';
     const text = await response.text();
+
+    console.log(`[Proxy] Success: ${response.status}, length: ${text.length}`);
 
     return new Response(text, {
       status: response.status,
       headers: {
         ...corsHeaders,
-        'Content-Type': response.headers.get('Content-Type') || 'text/html',
+        'Content-Type': contentType,
       },
     });
   } catch (error) {
+    console.error('[Proxy] Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

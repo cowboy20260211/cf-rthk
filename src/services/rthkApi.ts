@@ -758,8 +758,8 @@ export async function fetchPopularPrograms(): Promise<Program[]> {
     const html = await fetchWithProxies(url);
 
     if (!html) {
-      console.log('无法获取热门节目数据');
-      return [];
+      console.log('无法获取热门节目数据，使用静态热门列表');
+      return getStaticPopularPrograms();
     }
 
     const $ = cheerio.load(html);
@@ -937,6 +937,71 @@ function getDefaultPopularPrograms(): Program[] {
       archiveUrl: 'https://www.rthk.hk/radio/radio1/programme/millennium',
       episodeCount: 30,
       schedule: '星期一至五 08:00-08:30',
+    },
+  ];
+}
+
+function getStaticPopularPrograms(): Program[] {
+  return [
+    {
+      id: 'keepuco',
+      title: '輕談淺唱不夜天',
+      channel: '第二台',
+      channelId: 'radio2',
+      description: '深夜音樂節目，輕鬆的音樂與談話',
+      archiveUrl: 'https://www.rthk.hk/radio/radio2/programme/keepuco',
+      episodeCount: 30,
+      isPopular: true,
+    },
+    {
+      id: 'musiclover',
+      title: '音樂情人',
+      channel: '第二台',
+      channelId: 'radio2',
+      description: '經典流行音樂節目',
+      archiveUrl: 'https://www.rthk.hk/radio/radio2/programme/musiclover',
+      episodeCount: 30,
+      isPopular: true,
+    },
+    {
+      id: 'HK2000',
+      title: '千禧年代',
+      channel: '第一台',
+      channelId: 'radio1',
+      description: '晨早新聞時事節目',
+      archiveUrl: 'https://www.rthk.hk/radio/radio1/programme/HK2000',
+      episodeCount: 30,
+      isPopular: true,
+    },
+    {
+      id: 'crazyandhappy',
+      title: '瘋Show快活人',
+      channel: '第二台',
+      channelId: 'radio2',
+      description: '輕鬆娛樂節目',
+      archiveUrl: 'https://www.rthk.hk/radio/radio2/programme/crazyandhappy',
+      episodeCount: 30,
+      isPopular: true,
+    },
+    {
+      id: 'madeinhk',
+      title: 'Made in Hong Kong 李志剛',
+      channel: '第二台',
+      channelId: 'radio2',
+      description: '香港音樂文化節目',
+      archiveUrl: 'https://www.rthk.hk/radio/radio2/programme/madeinhk',
+      episodeCount: 30,
+      isPopular: true,
+    },
+    {
+      id: 'seesaw',
+      title: '守下留情',
+      channel: '第二台',
+      channelId: 'radio2',
+      description: '音樂與訪談節目',
+      archiveUrl: 'https://www.rthk.hk/radio/radio2/programme/seesaw',
+      episodeCount: 30,
+      isPopular: true,
     },
   ];
 }

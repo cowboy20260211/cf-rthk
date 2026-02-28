@@ -37,7 +37,14 @@ export default function Home() {
     },
   ];
 
-  const playChannel = (channel: (typeof liveChannels)[0]) => {
+  const playChannel = function (channel: {
+    id: string;
+    name: string;
+    nameEn: string;
+    desc: string;
+    frequency: string;
+    color: string;
+  }) {
     const channelData = {
       id: channel.id,
       name: channel.name,
@@ -49,9 +56,11 @@ export default function Home() {
     setChannel(channelData);
   };
 
-  const getChannelName = (channelId: string): string => {
-    const channel = liveChannels.find(c => c.id === channelId);
-    return channel?.name || channelId;
+  const getChannelName = function (channelId: string): string {
+    const channel = liveChannels.find(function (c) {
+      return c.id === channelId;
+    });
+    return channel ? channel.name : channelId;
   };
 
   return (
@@ -74,12 +83,12 @@ export default function Home() {
               <button
                 onClick={() => playChannel(channel)}
                 className={`mt-3 w-full py-2 rounded-lg font-medium ${
-                  currentChannel?.id === channel.id
+                  currentChannel && currentChannel.id === channel.id
                     ? 'bg-gray-200 text-gray-700'
                     : 'bg-rthk-red text-white'
                 }`}
               >
-                {currentChannel?.id === channel.id ? '✅ 正在收聽' : '▶ 開始收聽'}
+                {currentChannel && currentChannel.id === channel.id ? '✅ 正在收聽' : '▶ 開始收聽'}
               </button>
             </div>
           ))}

@@ -91,8 +91,8 @@ export default function ProgramDetail() {
     return `${month}月${day}日 (${weekday})`;
   };
 
-  const isCurrentEpisode = (episodeId: string) => {
-    return currentEpisode?.id === episodeId;
+  const isCurrentEpisode = function (episodeId: string): boolean {
+    return currentEpisode !== null && currentEpisode.id === episodeId;
   };
 
   if (loading) {

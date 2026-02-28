@@ -16,6 +16,8 @@ export default function ProgramDetail() {
   const isProgramFavorited = data ? favorites.some(f => f.programId === data.program.id) : false;
 
   const playEpisode = (ep: Episode) => {
+    console.log('Playing episode:', ep);
+    console.log('Episode duration:', ep.duration, 'seconds');
     const episodeDuration = ep.duration || 3600;
     setEpisode({
       id: ep.id,
@@ -28,7 +30,6 @@ export default function ProgramDetail() {
       audioUrl: ep.audioUrl || '',
       startTime: 0,
       endTime: episodeDuration,
-      programTitle: data?.program.title,
     });
   };
 
@@ -71,6 +72,7 @@ export default function ProgramDetail() {
 
           if (combinedResult.episodes.length > 0) {
             const latestEpisode = combinedResult.episodes[0];
+            console.log('Playing episode with duration:', latestEpisode.duration, 'seconds');
             playEpisode(latestEpisode);
           }
         } else {
@@ -89,8 +91,8 @@ export default function ProgramDetail() {
     return `${month}月${day}日 (${weekday})`;
   };
 
-  const isCurrentEpisode = (episodeId: string) => {
-    return currentEpisode?.id === episodeId;
+  const isCurrentEpisode = function (episodeId: string): boolean {
+    return currentEpisode !== null && currentEpisode.id === episodeId;
   };
 
   if (loading) {
@@ -140,9 +142,8 @@ export default function ProgramDetail() {
           </button>
         </div>
         <p className='text-sm text-gray-500 mt-1'>{channelName}</p>
-        {program.schedule && (
-          <p className='text-xs text-gray-400 mt-2'>播出時間: {program.schedule}</p>
-        )}
+        <p className='text-sm text-gray-600 mt-2'>{program.description}</p>
+        <p className='text-xs text-gray-400 mt-2'>播出時間: {program.schedule}</p>
         <p className='text-xs text-gray-400 mt-1'>共 {episodes.length} 集</p>
       </div>
 

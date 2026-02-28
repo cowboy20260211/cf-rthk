@@ -79,11 +79,11 @@ export default function Programs() {
 
   const filteredPrograms = displayedPrograms.filter(
     (p: Program) =>
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description.toLowerCase().includes(searchQuery.toLowerCase())
+      p.title.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1 ||
+      p.description.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1
   );
 
-  const getChannelColor = (channelId: string): string => {
+  const getChannelColor = function (channelId: string): string {
     const colors: Record<string, string> = {
       radio1: 'bg-red-600',
       radio2: 'bg-blue-600',
@@ -92,21 +92,30 @@ export default function Programs() {
     return colors[channelId] || 'bg-gray-600';
   };
 
+  const getChannelNameById = function (channelId: string): string {
+    const c = channels.find(function (ch) {
+      return ch.id === channelId;
+    });
+    return c ? c.name : '';
+  };
+
   const isProgramFavorited = (programId: string) => {
     return favorites.some(f => f.programId === programId);
   };
 
-  const toggleFavorite = (e: React.MouseEvent, program: Program) => {
+  const toggleFavorite = function (e: React.MouseEvent, program: Program) {
     e.preventDefault();
     e.stopPropagation();
 
     if (isProgramFavorited(program.id)) {
-      const fav = favorites.find(f => f.programId === program.id);
+      const fav = favorites.find(function (f) {
+        return f.programId === program.id;
+      });
       if (fav) {
         removeFavorite(fav.id);
       }
     } else {
-      const channelName = channels.find(c => c.id === program.channelId)?.name || '第一台';
+      const channelName = getChannelNameById(program.channelId) || '第一台';
       addFavorite({
         episodeId: program.id,
         programId: program.id,
@@ -195,7 +204,7 @@ export default function Programs() {
                 <h3 className='font-bold truncate'>{program.title}</h3>
                 <p className='text-sm text-gray-500 mt-1'>{program.description}</p>
                 <p className='text-xs text-gray-400 mt-1'>
-                  {channels.find(c => c.id === program.channelId)?.name} | {program.schedule}
+                  {getChannelNameById(program.channelId)} | {program.schedule}
                 </p>
                 <p className='text-xs text-gray-400 mt-1'>{program.episodeCount || 30} 集</p>
               </div>

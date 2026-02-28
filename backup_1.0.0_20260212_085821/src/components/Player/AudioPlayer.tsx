@@ -215,7 +215,7 @@ export default function AudioPlayer() {
     if (!audio) return;
 
     let streamUrl = '';
-    if (currentEpisode?.audioUrl) {
+    if (currentEpisode && currentEpisode.audioUrl) {
       streamUrl = currentEpisode.audioUrl;
       console.log('[Player] Episode URL:', streamUrl);
     } else if (currentEpisode) {
@@ -223,7 +223,7 @@ export default function AudioPlayer() {
         RTHK_LIVE_STREAMS[currentEpisode.channelId as keyof typeof RTHK_LIVE_STREAMS] ||
         RTHK_LIVE_STREAMS.radio1;
       console.log('[Player] Fallback URL:', streamUrl);
-    } else if (currentChannel?.streamUrl) {
+    } else if (currentChannel && currentChannel.streamUrl) {
       streamUrl = currentChannel.streamUrl;
       console.log('[Player] Live URL:', streamUrl);
     }
@@ -233,7 +233,9 @@ export default function AudioPlayer() {
       return;
     }
 
-    const episodeId = currentEpisode?.id || `live-${currentChannel?.id || ''}`;
+    const episodeId =
+      (currentEpisode ? currentEpisode.id : '') ||
+      'live-' + (currentChannel ? currentChannel.id : '');
 
     // Don't reload if same content
     if (lastEpisodeIdRef.current === episodeId && audio.src === streamUrl) {
@@ -266,9 +268,11 @@ export default function AudioPlayer() {
     }
 
     // Load stream
-    if (streamUrl.includes('.m3u8') && Hls.isSupported()) {
+    if (streamUrl.indexOf('.m3u8') !== -1 && Hls.isSupported()) {
       console.log('[Player] Using HLS');
-      const hls = new Hls(isLive ? {} : { startPosition: currentEpisode?.startTime || 0 });
+      const hls = new Hls(
+        isLive ? {} : { startPosition: (currentEpisode && currentEpisode.startTime) || 0 }
+      );
       hlsRef.current = hls;
       hls.attachMedia(audio);
       hls.loadSource(streamUrl);
@@ -311,9 +315,9 @@ export default function AudioPlayer() {
             console.log('[Player] Auto-play succeeded, starting poll');
             startPolling();
           })
-          .catch((err: any) => {
+          .catch(function (err: any) {
             // Ignore channel closed errors from extensions
-            if (err.message && err.message.includes('channel closed')) {
+            if (err.message && err.message.indexOf('channel closed') !== -1) {
               console.log('[Player] Extension channel closed (ignorable)');
             } else {
               console.log('[Player] Auto-play failed:', err);
@@ -356,9 +360,9 @@ export default function AudioPlayer() {
             console.log('[Player] Native auto-play succeeded');
             startPolling();
           })
-          .catch((err: any) => {
+          .catch(function (err: any) {
             // Ignore channel closed errors from extensions
-            if (err.message && err.message.includes('channel closed')) {
+            if (err.message && err.message.indexOf('channel closed') !== -1) {
               console.log('[Player] Extension channel closed (ignorable)');
             } else {
               console.log('[Player] Native auto-play failed:', err);
@@ -457,7 +461,9 @@ export default function AudioPlayer() {
                 whiteSpace: 'nowrap',
               }}
             >
-              {currentEpisode?.title || currentChannel?.name || '未知'}
+              {(currentEpisode && currentEpisode.title) ||
+                (currentChannel && currentChannel.name) ||
+                '未知'}
             </div>
             <div
               style={{
@@ -468,7 +474,9 @@ export default function AudioPlayer() {
                 whiteSpace: 'nowrap',
               }}
             >
-              {currentEpisode?.publishDate || currentChannel?.description || ''}
+              {(currentEpisode && currentEpisode.publishDate) ||
+                (currentChannel && currentChannel.description) ||
+                ''}
             </div>
           </div>
 

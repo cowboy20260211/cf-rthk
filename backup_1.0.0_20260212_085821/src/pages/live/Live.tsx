@@ -33,7 +33,14 @@ export default function Live() {
 
   console.log('Live page rendered, currentChannel:', currentChannel);
 
-  const playChannel = (channel: (typeof channels)[0]) => {
+  const playChannel = function (channel: {
+    id: string;
+    name: string;
+    nameEn: string;
+    description: string;
+    color: string;
+    frequency: string;
+  }) {
     console.log('playChannel called:', channel.name);
     const channelData = {
       id: channel.id,
@@ -47,6 +54,10 @@ export default function Live() {
     setChannel(channelData);
   };
 
+  const isCurrentChannel = function (channelId: string): boolean {
+    return currentChannel !== null && currentChannel.id === channelId;
+  };
+
   return (
     <div className='p-4 pb-24'>
       <h1 className='text-2xl font-bold mb-6'>直播频道</h1>
@@ -54,7 +65,7 @@ export default function Live() {
         {channels.map(channel => (
           <div
             key={channel.id}
-            className={`card ${currentChannel?.id === channel.id ? 'ring-2 ring-rthk-red' : ''}`}
+            className={`card ${isCurrentChannel(channel.id) ? 'ring-2 ring-rthk-red' : ''}`}
           >
             <div className='flex gap-4'>
               <div
@@ -68,7 +79,7 @@ export default function Live() {
                     <h2 className='text-xl font-bold'>{channel.name}</h2>
                     <p className='text-sm text-gray-500'>{channel.nameEn}</p>
                   </div>
-                  {currentChannel?.id === channel.id && (
+                  {isCurrentChannel(channel.id) && (
                     <span className='flex items-center gap-1 text-red-600'>
                       <span className='w-2 h-2 bg-red-600 rounded-full animate-pulse' />
                       LIVE
@@ -79,9 +90,9 @@ export default function Live() {
                 <p className='text-xs text-gray-400 mt-1'>{channel.frequency}</p>
                 <button
                   onClick={() => playChannel(channel)}
-                  className={`mt-3 px-6 py-2 rounded-full font-medium ${currentChannel?.id === channel.id ? 'bg-gray-200 text-gray-700' : 'bg-rthk-red text-white'}`}
+                  className={`mt-3 px-6 py-2 rounded-full font-medium ${isCurrentChannel(channel.id) ? 'bg-gray-200 text-gray-700' : 'bg-rthk-red text-white'}`}
                 >
-                  {currentChannel?.id === channel.id ? '正在收听' : '开始收听'}
+                  {isCurrentChannel(channel.id) ? '正在收听' : '开始收听'}
                 </button>
               </div>
             </div>

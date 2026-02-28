@@ -19,15 +19,18 @@ class RTHKService {
 
   async getLiveChannels(): Promise<LiveChannel[]> {
     const channels: LiveChannel[] = [];
+    const keys = Object.keys(this.channelMapping);
 
-    for (const [id, info] of Object.entries(this.channelMapping)) {
+    for (var i = 0; i < keys.length; i++) {
+      var id = keys[i];
+      var info = this.channelMapping[id];
       channels.push({
-        id,
+        id: id,
         name: info.name,
         nameEn: info.nameEn,
         streamUrl: RTHK_LIVE_STREAMS[id] || '',
-        logo: `${this.baseUrl}${info.path}/assets/images/logo.png`,
-        description: `香港电台${info.name} - ${this.getChannelDescription(id)}`,
+        logo: this.baseUrl + info.path + '/assets/images/logo.png',
+        description: '香港电台' + info.name + ' - ' + this.getChannelDescription(id),
       });
     }
 

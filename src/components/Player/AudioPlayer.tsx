@@ -44,21 +44,48 @@ export default function AudioPlayer() {
   const [retryCount, setRetryCount] = useState(0);
 
   const lastEpisodeIdRef = useRef<string>('');
+  const liveUpdateTimerRef = useRef<number | null>(null);
   const isLive = !currentEpisode && currentChannel;
 
   useEffect(() => {
-    if (currentChannel?.id) {
+    if (!currentChannel?.id || currentEpisode) {
+      if (liveUpdateTimerRef.current) {
+        clearInterval(liveUpdateTimerRef.current);
+        liveUpdateTimerRef.current = null;
+      }
+      setLiveProgramInfo(null);
+      return;
+    }
+
+    const fetchLiveInfo = () => {
       fetchCurrentLiveProgram(currentChannel.id)
         .then(info => {
-          setLiveProgramInfo(info);
+          if (info) setLiveProgramInfo(info);
         })
-        .catch(() => {
-          setLiveProgramInfo(null);
-        });
-    } else {
-      setLiveProgramInfo(null);
-    }
-  }, [currentChannel?.id]);
+        .catch(() => {});
+    };
+
+    fetchLiveInfo();
+    liveUpdateTimerRef.current = window.setInterval(fetchLiveInfo, 5 * 60 * 1000);
+
+    return () => {
+      if (liveUpdateTimerRef.current) {
+        clearInterval(liveUpdateTimerRef.current);
+        liveUpdateTimerRef.current = null;
+      }
+    };
+  }, [currentChannel?.id, currentEpisode]);
+
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    if (!isLive || !liveProgramInfo) return;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: liveProgramInfo.program,
+      artist: liveProgramInfo.host || currentChannel?.name || '',
+      album: currentChannel?.name || '',
+    });
+  }, [liveProgramInfo, isLive, currentChannel?.name]);
 
   // Start polling for timeline update
   const startPolling = useCallback(() => {

@@ -10,24 +10,6 @@ interface LiveProgramInfo {
   host: string;
 }
 
-// 计算下次更新时间（正点或30分）
-function getNextUpdateTime(): number {
-  const now = new Date();
-  const minutes = now.getMinutes();
-  const seconds = now.getSeconds();
-  const ms = now.getMilliseconds();
-
-  let nextMinute: number;
-  if (minutes < 30) {
-    nextMinute = 30;
-  } else {
-    nextMinute = 60; // 下一个小时的00分
-  }
-
-  const msUntilNext = (nextMinute - minutes) * 60 * 1000 - seconds * 1000 - ms;
-  return msUntilNext;
-}
-
 export default function Home() {
   const { currentChannel, setChannel } = usePlayer();
   const { favorites } = useFavorite();
@@ -66,17 +48,8 @@ export default function Home() {
 
   useEffect(() => {
     updateLiveProgramInfo();
-
-    const scheduleNextUpdate = () => {
-      const msUntilNext = getNextUpdateTime();
-      return setTimeout(() => {
-        updateLiveProgramInfo();
-        scheduleNextUpdate();
-      }, msUntilNext);
-    };
-
-    const timerId = scheduleNextUpdate();
-    return () => clearTimeout(timerId);
+    const timer = setInterval(updateLiveProgramInfo, 5 * 60 * 1000);
+    return () => clearInterval(timer);
   }, [updateLiveProgramInfo]);
 
   const liveChannels = [

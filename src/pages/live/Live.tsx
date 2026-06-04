@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { usePlayer } from '../../stores/PlayerContext';
 import { RTHK_LIVE_STREAMS } from '../../services/rthk';
 
@@ -31,7 +32,20 @@ const channels = [
 export default function Live() {
   const { currentChannel, setChannel } = usePlayer();
 
+  useEffect(() => {
+    const handlePlaybackStopped = () => {
+      setChannel(null);
+    };
+
+    window.addEventListener('playback-stopped', handlePlaybackStopped);
+    return () => window.removeEventListener('playback-stopped', handlePlaybackStopped);
+  }, [setChannel]);
+
   const playChannel = (channel: (typeof channels)[0]) => {
+    if (currentChannel?.id === channel.id) {
+      window.dispatchEvent(new Event('playback-stopped'));
+      return;
+    }
     const channelData = {
       id: channel.id,
       name: channel.name,
@@ -41,6 +55,10 @@ export default function Live() {
       description: channel.description,
     };
     setChannel(channelData);
+    setTimeout(() => {
+      const event = new CustomEvent('trigger-autoplay');
+      window.dispatchEvent(event);
+    }, 100);
   };
 
   return (
@@ -75,9 +93,9 @@ export default function Live() {
                 <p className='text-xs text-gray-400 mt-1'>{channel.frequency}</p>
                 <button
                   onClick={() => playChannel(channel)}
-                  className={`mt-3 px-6 py-2 rounded-full font-medium ${currentChannel?.id === channel.id ? 'bg-gray-200 text-gray-700' : 'bg-rthk-red text-white'}`}
+                  className={`mt-3 px-6 py-2 rounded-full font-medium ${currentChannel?.id === channel.id ? 'bg-green-600 text-white' : 'bg-rthk-red text-white'}`}
                 >
-                  {currentChannel?.id === channel.id ? '正在收听' : '开始收听'}
+                  {currentChannel?.id === channel.id ? '🔊 正在收聽' : '▶ 開始收聽'}
                 </button>
               </div>
             </div>

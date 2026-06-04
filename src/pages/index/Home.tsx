@@ -53,6 +53,31 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [updateLiveProgramInfo]);
 
+  useEffect(() => {
+    const handleLiveUpdate = (e: CustomEvent) => {
+      const { channelId, program, host } = e.detail;
+      if (channelId) {
+        setLiveProgramInfo(prev => ({
+          ...prev,
+          [channelId]: { program: program || '', host: host || '' },
+        }));
+        setLastUpdate(new Date());
+      }
+    };
+
+    window.addEventListener('live-program-updated', handleLiveUpdate as EventListener);
+    return () => window.removeEventListener('live-program-updated', handleLiveUpdate as EventListener);
+  }, []);
+
+  useEffect(() => {
+    const handlePlaybackStopped = () => {
+      setChannel(null);
+    };
+
+    window.addEventListener('playback-stopped', handlePlaybackStopped);
+    return () => window.removeEventListener('playback-stopped', handlePlaybackStopped);
+  }, [setChannel]);
+
   const liveChannels = [
     {
       id: 'radio1',
@@ -81,6 +106,10 @@ export default function Home() {
   ];
 
   const playChannel = (channel: (typeof liveChannels)[0]) => {
+    if (currentChannel?.id === channel.id) {
+      window.dispatchEvent(new Event('playback-stopped'));
+      return;
+    }
     const channelData = {
       id: channel.id,
       name: channel.name,
@@ -90,6 +119,10 @@ export default function Home() {
       description: channel.desc,
     };
     setChannel(channelData);
+    setTimeout(() => {
+      const event = new CustomEvent('trigger-autoplay');
+      window.dispatchEvent(event);
+    }, 100);
   };
 
   const getChannelName = (channelId: string): string => {
@@ -125,11 +158,11 @@ export default function Home() {
                 onClick={() => playChannel(channel)}
                 className={`mt-3 w-full py-2 rounded-lg font-medium ${
                   currentChannel?.id === channel.id
-                    ? 'bg-gray-200 text-gray-700'
+                    ? 'bg-green-600 text-white'
                     : 'bg-rthk-red text-white'
                 }`}
               >
-                {currentChannel?.id === channel.id ? '✅ 正在收聽' : '▶ 開始收聽'}
+                {currentChannel?.id === channel.id ? '🔊 正在收聽' : '▶ 開始收聽'}
               </button>
               {liveProgramInfo[channel.id] && (
                 <p className='text-xs text-rthk-red mt-2 font-medium'>

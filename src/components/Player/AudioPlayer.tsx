@@ -45,7 +45,39 @@ export default function AudioPlayer() {
 
   const lastEpisodeIdRef = useRef<string>('');
   const liveUpdateTimerRef = useRef<number | null>(null);
+  const progressTimerRef = useRef<number | null>(null);
   const isLive = !currentEpisode && currentChannel;
+
+  const PROGRESS_KEY = 'rthk_playback_progress';
+
+  const saveProgress = (id: string, currentTime: number, duration: number) => {
+    if (!id || id.startsWith('live-')) return;
+    try {
+      const data = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
+      data[id] = { currentTime, duration, updatedAt: Date.now() };
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(data));
+    } catch {}
+  };
+
+  const getSavedProgress = (id: string): number | null => {
+    if (!id) return null;
+    try {
+      const data = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}')[id];
+      if (data && Date.now() - data.updatedAt < 7 * 24 * 60 * 60 * 1000) {
+        return data.currentTime ?? null;
+      }
+    } catch {}
+    return null;
+  };
+
+  const clearProgress = (id: string) => {
+    if (!id) return;
+    try {
+      const data = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
+      delete data[id];
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(data));
+    } catch {}
+  };
 
   useEffect(() => {
     if (!currentChannel?.id || currentEpisode) {
@@ -60,7 +92,12 @@ export default function AudioPlayer() {
     const fetchLiveInfo = () => {
       fetchCurrentLiveProgram(currentChannel.id)
         .then(info => {
-          if (info) setLiveProgramInfo(info);
+          if (info) {
+            setLiveProgramInfo(info);
+            window.dispatchEvent(new CustomEvent('live-program-updated', {
+              detail: { ...info, channelId: currentChannel.id }
+            }));
+          }
         })
         .catch(() => {});
     };
@@ -76,18 +113,38 @@ export default function AudioPlayer() {
     };
   }, [currentChannel?.id, currentEpisode]);
 
-  useEffect(() => {
+  const updateMediaSession = useCallback(() => {
     if (!('mediaSession' in navigator)) return;
-    if (!isLive || !liveProgramInfo) return;
+    
+    const title = isLive 
+      ? (liveProgramInfo?.program || currentChannel?.name || '直播')
+      : (currentEpisode?.programTitle || currentEpisode?.title || '节目');
+    const artist = isLive
+      ? (liveProgramInfo?.host || currentChannel?.name || '香港电台')
+      : (currentEpisode?.publishDate || '');
+    const album = isLive ? (currentChannel?.name || '直播') : '节目重温';
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: liveProgramInfo.program,
-      artist: liveProgramInfo.host || currentChannel?.name || '',
-      album: currentChannel?.name || '',
-    });
-  }, [liveProgramInfo, isLive, currentChannel?.name]);
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title,
+        artist,
+        album,
+        artwork: [
+          { src: '/favicon.svg', sizes: '512x512', type: 'image/svg+xml' },
+          { src: '/favicon.svg', sizes: '128x128', type: 'image/svg+xml' },
+          { src: '/favicon.svg', sizes: '96x96', type: 'image/svg+xml' },
+          { src: '/favicon.svg', sizes: '64x64', type: 'image/svg+xml' },
+        ],
+      });
+    } catch (e) {
+      console.log('MediaSession error:', e);
+    }
+  }, [isLive, liveProgramInfo, currentChannel, currentEpisode]);
 
-  // Start polling for timeline update
+  useEffect(() => {
+    updateMediaSession();
+  }, [updateMediaSession]);
+
   const startPolling = useCallback(() => {
     if (pollingTimerRef.current) {
       clearInterval(pollingTimerRef.current);
@@ -112,6 +169,31 @@ export default function AudioPlayer() {
       pollingTimerRef.current = null;
     }
   }, []);
+
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    
+    navigator.mediaSession.setActionHandler('play', () => {
+      const audio = audioRef.current;
+      if (audio) {
+        audio.play().then(() => {
+          isPlayingRef.current = true;
+          setIsPlaying(true);
+          startPolling();
+        }).catch(() => {});
+      }
+    });
+    
+    navigator.mediaSession.setActionHandler('pause', () => {
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        isPlayingRef.current = false;
+        setIsPlaying(false);
+        stopPolling();
+      }
+    });
+  }, [startPolling, stopPolling]);
 
   // Create audio element once
   useEffect(() => {
@@ -143,6 +225,11 @@ export default function AudioPlayer() {
       isPlayingRef.current = false;
       setIsPlaying(false);
       stopPolling();
+      const audio = audioRef.current;
+      if (audio && currentEpisode?.id) {
+        saveProgress(currentEpisode.id, audio.currentTime, audio.duration || 0);
+      }
+      window.dispatchEvent(new Event('playback-stopped'));
     };
 
     const handleEnded = () => {
@@ -150,6 +237,10 @@ export default function AudioPlayer() {
       setIsPlaying(false);
       stopPolling();
       setCurrentTime(0);
+      if (currentEpisode?.id) {
+        clearProgress(currentEpisode.id);
+      }
+      window.dispatchEvent(new Event('playback-stopped'));
     };
 
     const handleLoadedMetadata = () => {
@@ -211,8 +302,12 @@ export default function AudioPlayer() {
       setIsPlaying(false);
       stopPolling();
       audio.pause();
+      if (currentEpisode?.id) {
+        saveProgress(currentEpisode.id, audio.currentTime, audio.duration || 0);
+      }
+      window.dispatchEvent(new Event('playback-stopped'));
     }
-  }, [startPolling, stopPolling]);
+  }, [startPolling, stopPolling, currentEpisode]);
 
   // Seek
   const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -282,7 +377,8 @@ export default function AudioPlayer() {
     if (!isLive && currentEpisode) {
       const dur = currentEpisode.duration || 3600;
       setDuration(dur);
-      const start = currentEpisode.startTime || 0;
+      const savedTime = getSavedProgress(currentEpisode.id);
+      const start = savedTime !== null ? savedTime : (currentEpisode.startTime || 0);
       audio.currentTime = start;
     } else {
       setDuration(0);
@@ -443,18 +539,62 @@ export default function AudioPlayer() {
     }
   }, [currentChannel, currentEpisode]);
 
+  useEffect(() => {
+    if (!currentEpisode || isLive || !isPlaying) {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+      return;
+    }
+
+    progressTimerRef.current = window.setInterval(() => {
+      const audio = audioRef.current;
+      if (audio && currentEpisode.id) {
+        saveProgress(currentEpisode.id, audio.currentTime, audio.duration || 0);
+      }
+    }, 10 * 1000);
+
+    return () => {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+      const audio = audioRef.current;
+      if (audio && currentEpisode?.id) {
+        saveProgress(currentEpisode.id, audio.currentTime, audio.duration || 0);
+      }
+    };
+  }, [currentEpisode?.id, isLive, isPlaying]);
+
+  useEffect(() => {
+    const handleTriggerAutoplay = () => {
+      const audio = audioRef.current;
+      if (audio && (audio.paused || audio.currentTime === 0)) {
+        audio.play().then(() => {
+          isPlayingRef.current = true;
+          setIsPlaying(true);
+          startPolling();
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener('trigger-autoplay', handleTriggerAutoplay);
+    return () => window.removeEventListener('trigger-autoplay', handleTriggerAutoplay);
+  }, [startPolling]);
+
   if (!currentChannel && !currentEpisode) return null;
 
   return (
     <div
       style={{
         position: 'fixed',
-        bottom: 0,
+        bottom: '70px',
         left: 0,
         right: 0,
         background: isExpanded ? 'white' : 'transparent',
-        zIndex: 50,
-        height: isExpanded ? (isLive ? '50px' : '80px') : '5px',
+        zIndex: 45,
+        height: isExpanded ? (isLive ? '70px' : '100px') : '5px',
       }}
     >
       {/* Collapsed */}

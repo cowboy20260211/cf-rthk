@@ -54,7 +54,7 @@ export default function Profile() {
 
       <section className='card'>
         <h2 className='font-bold mb-4'>关于</h2>
-        <p className='text-sm text-gray-600'>版本: 1.0.0</p>
+        <p className='text-sm text-gray-600'>版本: 20260530-022653</p>
         <p className='text-sm text-gray-600'>香港电台CF版</p>
         <p className='text-sm text-gray-400 mt-4'>本应用仅供学习交流使用</p>
       </section>

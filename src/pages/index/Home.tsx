@@ -20,29 +20,19 @@ export default function Home() {
 
   const updateLiveProgramInfo = useCallback(() => {
     const channels = ['radio1', 'radio2', 'radio5'];
-    console.log('[Home更新] 开始获取直播节目信息...', new Date().toLocaleTimeString());
     Promise.allSettled(
       channels.map(channelId =>
-        fetchCurrentPlaying(channelId)
-          .then(info => {
-            if (info) {
-              console.log(`[Home更新] ${channelId} 获取成功:`, info.program);
-              setLiveProgramInfo(prev => ({
-                ...prev,
-                [channelId]: { program: info.program, host: info.host },
-              }));
-            } else {
-              console.warn(`[Home更新] ${channelId} 返回空数据`);
-            }
-          })
-          .catch(err => {
-            console.error(`[Home更新] ${channelId} 获取失败:`, err);
-          })
+        fetchCurrentPlaying(channelId).then(info => {
+          if (info) {
+            setLiveProgramInfo(prev => ({
+              ...prev,
+              [channelId]: { program: info.program, host: info.host },
+            }));
+          }
+        })
       )
     ).then(() => {
-      const now = new Date();
-      console.log('[Home更新] 全部完成，更新时间戳:', now.toLocaleTimeString());
-      setLastUpdate(now);
+      setLastUpdate(new Date());
     });
   }, []);
 

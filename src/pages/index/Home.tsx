@@ -20,9 +20,9 @@ export default function Home() {
 
   const updateLiveProgramInfo = useCallback(() => {
     const channels = ['radio1', 'radio2', 'radio5'];
-    channels.forEach(channelId => {
-      fetchCurrentPlaying(channelId)
-        .then(info => {
+    Promise.allSettled(
+      channels.map(channelId =>
+        fetchCurrentPlaying(channelId).then(info => {
           if (info) {
             setLiveProgramInfo(prev => ({
               ...prev,
@@ -30,9 +30,10 @@ export default function Home() {
             }));
           }
         })
-        .catch(() => {});
+      )
+    ).then(() => {
+      setLastUpdate(new Date());
     });
-    setLastUpdate(new Date());
   }, []);
 
   useEffect(() => {

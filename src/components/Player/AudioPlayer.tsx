@@ -160,13 +160,28 @@ export default function AudioPlayer() {
         }
       }
     }, 100);
-  }, []);
+
+    // Periodic progress save every 10 seconds
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+    }
+    progressTimerRef.current = window.setInterval(() => {
+      const audio = audioRef.current;
+      if (audio && !audio.paused && currentEpisode?.id) {
+        saveProgress(currentEpisode.id, audio.currentTime, audio.duration || 0);
+      }
+    }, 10000);
+  }, [currentEpisode?.id]);
 
   // Stop polling
   const stopPolling = useCallback(() => {
     if (pollingTimerRef.current) {
       clearInterval(pollingTimerRef.current);
       pollingTimerRef.current = null;
+    }
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
     }
   }, []);
 
@@ -274,6 +289,10 @@ export default function AudioPlayer() {
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
+      }
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
       }
       audio.pause();
       audio.src = '';
@@ -425,7 +444,12 @@ export default function AudioPlayer() {
         }
 
         if (!isLive && currentEpisode) {
-          audio.currentTime = currentEpisode.startTime || 0;
+          const savedTime = getSavedProgress(currentEpisode.id);
+          if (savedTime !== null) {
+            audio.currentTime = savedTime;
+          } else {
+            audio.currentTime = currentEpisode.startTime || 0;
+          }
         }
         audio
           .play()
@@ -518,7 +542,12 @@ export default function AudioPlayer() {
       audio.load();
       audio.oncanplay = () => {
         if (!isLive && currentEpisode) {
-          audio.currentTime = currentEpisode.startTime || 0;
+          const savedTime = getSavedProgress(currentEpisode.id);
+          if (savedTime !== null) {
+            audio.currentTime = savedTime;
+          } else {
+            audio.currentTime = currentEpisode.startTime || 0;
+          }
         }
         audio
           .play()

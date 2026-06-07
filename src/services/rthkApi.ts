@@ -51,13 +51,22 @@ interface CacheEntry<T> {
 const programCache: Map<string, CacheEntry<Program[]>> = new Map();
 let popularProgramsCache: CacheEntry<Program[]> | null = null;
 
-// Use internal proxy API instead of third-party proxies
+// iOS 15 Safari does not support AbortSignal.timeout()
+function createTimeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms);
+  }
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
+
 async function fetchWithProxies(url: string): Promise<string | null> {
   try {
     const proxyUrl = `/api/proxy/${encodeURIComponent(url)}`;
 
     const res = await fetch(proxyUrl, {
-      signal: AbortSignal.timeout(15000),
+      signal: createTimeoutSignal(15000),
     });
 
     if (res.ok) {
@@ -726,7 +735,7 @@ export async function fetchCurrentLiveProgram(
     const proxyUrl = `/api/proxy/${encodeURIComponent(apiUrl)}`;
 
     const res = await fetch(proxyUrl, {
-      signal: AbortSignal.timeout(15000),
+      signal: createTimeoutSignal(15000),
     });
 
     if (!res.ok) {
@@ -796,7 +805,7 @@ export async function fetchDayProgramSchedule(channelId: string): Promise<Progra
     let html = '';
     try {
       const res = await fetch(proxyUrl, {
-        signal: AbortSignal.timeout(15000),
+        signal: createTimeoutSignal(15000),
       });
       if (res.ok) {
         html = await res.text();
@@ -910,7 +919,7 @@ export async function fetchRadioSchedule(channelId: string): Promise<RadioSchedu
     const proxyUrl = `/api/proxy/${encodeURIComponent(apiUrl)}`;
 
     const res = await fetch(proxyUrl, {
-      signal: AbortSignal.timeout(15000),
+      signal: createTimeoutSignal(15000),
     });
     if (res.ok) {
       const text = await res.text();
@@ -986,7 +995,7 @@ export async function fetchCurrentPlaying(channelId: string): Promise<CurrentPla
     const timetableUrl = `/api/timetable?d=${todayStr}&c=${channelId}`;
 
     const res = await fetch(timetableUrl, {
-      signal: AbortSignal.timeout(15000),
+      signal: createTimeoutSignal(15000),
     });
     if (res.ok) {
       const text = await res.text();
@@ -1003,7 +1012,7 @@ export async function fetchCurrentPlaying(channelId: string): Promise<CurrentPla
       const proxyUrl = `/api/proxy/${encodeURIComponent(apiUrl)}`;
 
       const res = await fetch(proxyUrl, {
-        signal: AbortSignal.timeout(15000),
+        signal: createTimeoutSignal(15000),
       });
       if (res.ok) {
         const text = await res.text();

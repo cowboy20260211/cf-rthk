@@ -227,6 +227,10 @@ export default function AudioPlayer() {
         if (!paused) {
           setCurrentTime(current);
         }
+        const dur = audioRef.current.duration;
+        if (dur && isFinite(dur) && dur > 0 && dur !== Infinity) {
+          setDuration(dur);
+        }
       }
     };
 
@@ -548,6 +552,10 @@ export default function AudioPlayer() {
           } else {
             audio.currentTime = currentEpisode.startTime || 0;
           }
+        }
+        const dur = audio.duration;
+        if (dur && isFinite(dur) && dur > 0 && dur !== Infinity) {
+          setDuration(dur);
         }
         audio
           .play()

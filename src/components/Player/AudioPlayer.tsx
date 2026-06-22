@@ -782,16 +782,19 @@ export default function AudioPlayer() {
                 width: '25px',
                 height: '25px',
                 borderRadius: '50%',
-                background: '#d40000',
+                background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
               }}
             >
-              <span style={{ color: 'white', fontSize: '10px' }}>{isPlaying ? '⏸' : '▶'}</span>
+              {isPlaying ? (
+                <span style={{ color: '#000', fontSize: '10px', letterSpacing: '2px' }}>❚❚</span>
+              ) : (
+                <span style={{ color: '#d40000', fontSize: '10px' }}>▶</span>
+              )}
             </button>
           </div>
 

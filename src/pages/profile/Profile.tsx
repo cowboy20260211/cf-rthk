@@ -58,7 +58,7 @@ export default function Profile() {
           className='text-sm text-gray-600 cursor-pointer hover:text-rthk-red transition-colors'
           onClick={() => window.location.reload()}
         >
-          版本: 20260608-000000
+          版本: 20260608-010000
         </p>
         <p className='text-sm text-gray-600'>香港电台CF版</p>
         <p className='text-sm text-gray-400 mt-4'>本应用仅供学习交流使用</p>

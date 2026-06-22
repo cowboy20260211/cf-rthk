@@ -779,8 +779,8 @@ export default function AudioPlayer() {
             <button
               onClick={handlePlayPause}
               style={{
-                width: '25px',
-                height: '25px',
+                width: '30px',
+                height: '30px',
                 borderRadius: '50%',
                 background: 'transparent',
                 border: 'none',
@@ -791,9 +791,9 @@ export default function AudioPlayer() {
               }}
             >
               {isPlaying ? (
-                <span style={{ color: '#000', fontSize: '10px', letterSpacing: '2px' }}>❚❚</span>
+                <span style={{ color: '#000', fontSize: '20px', letterSpacing: '2px' }}>❚❚</span>
               ) : (
-                <span style={{ color: '#d40000', fontSize: '10px' }}>▶</span>
+                <span style={{ color: '#d40000', fontSize: '20px' }}>▶</span>
               )}
             </button>
           </div>

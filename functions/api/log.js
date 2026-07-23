@@ -9,6 +9,29 @@ export async function onRequestPost(context) {
     const timestamp = hkDate.toISOString();
 
     const cf = request.cf || {};
+
+    // 读取session cookie，查询KV以补充登录信息
+    let loginMethod = '';
+    let loginMethodLabel = '';
+    let socialUid = '';
+    let nickname = '';
+
+    const cookieHeader = request.headers.get('cookie') || '';
+    const sessionMatch = cookieHeader.match(/rthk_session=([a-f0-9]+)/);
+    if (sessionMatch) {
+      try {
+        const sessionKey = `session:${sessionMatch[1]}`;
+        const sessionData = await env.RTHK_FAVORITES.get(sessionKey);
+        if (sessionData) {
+          const user = JSON.parse(sessionData);
+          loginMethod = user.type || '';
+          loginMethodLabel = user.typeLabel || '';
+          socialUid = user.socialUid || '';
+          nickname = user.nickname || '';
+        }
+      } catch (e) {}
+    }
+
     const entry = {
       timestamp,
       ip: request.headers.get('cf-connecting-ip') || 'unknown',
@@ -25,6 +48,10 @@ export async function onRequestPost(context) {
       lang: body.lang || request.headers.get('accept-language') || 'unknown',
       path: body.path || '/',
       referrer: body.referrer || '',
+      loginMethod,
+      loginMethodLabel,
+      socialUid,
+      nickname,
     };
 
     const key = `log:${dateKey}`;
@@ -38,8 +65,6 @@ export async function onRequestPost(context) {
 
     logs.push(entry);
 
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 3600000);
-    const cutoffDate = new Date(thirtyDaysAgo.getTime() + 8 * 3600000).toISOString().slice(0, 10);
     await env.RTHK_FAVORITES.put(key, JSON.stringify(logs), {
       expirationTtl: 31 * 24 * 3600,
     });

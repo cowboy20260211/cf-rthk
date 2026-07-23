@@ -3,6 +3,201 @@
   padding-bottom: 100px;
 }
 
+/* ========== 彩虹聚合登录区 ========== */
+.auth-section {
+  margin-bottom: 16px;
+}
+
+.auth-loading {
+  text-align: center;
+  padding: 24px;
+  color: #999;
+  font-size: 14px;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #fff5f5, #fff);
+  border: 1px solid #ffe0e0;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.user-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.user-avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #d32f2f;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.user-name {
+  font-size: 16px;
+  color: #222;
+}
+
+.user-badge {
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.user-meta {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.user-uid {
+  display: block;
+  font-size: 10px;
+  color: #bbb;
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+.logout-btn {
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid #d32f2f;
+  color: #d32f2f;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.logout-btn:active {
+  background: #d32f2f;
+  color: #fff;
+}
+
+.login-panel {
+  background: linear-gradient(135deg, #fff, #fff9f9);
+  border: 1px solid #eee;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.login-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+}
+
+.login-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+}
+
+.login-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+}
+
+.login-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border: 1.5px solid;
+  border-radius: 10px;
+  padding: 10px 4px;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.login-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.login-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.login-label {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* 表格中登录方式标识 */
+.login-method-badge {
+  display: inline-block;
+  background: #d32f2f;
+  color: #fff;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.cell-nick {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+.cell-empty {
+  color: #ccc;
+}
+
+.row-login-event {
+  background: #fff8f8;
+}
+
+.row-login-event td {
+  border-bottom-color: #ffe0e0;
+}
+
+/* 统计卡片增加 已登录访问 样式 */
+.stat-card:nth-child(4) .stat-value {
+  color: #d32f2f;
+}
+
+
 .logs-header h1 {
   margin: 0 0 4px;
   font-size: 20px;

@@ -18,6 +18,7 @@ export function sendAccessLog(path?: string) {
   };
 
   try {
+    // 使用beacon发送；credentials让服务器读取HttpOnly cookie中的session
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/log', JSON.stringify(data));
     } else {
@@ -25,6 +26,7 @@ export function sendAccessLog(path?: string) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
+        credentials: 'include',
         keepalive: true,
       }).catch(() => {});
     }

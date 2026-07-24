@@ -105,28 +105,32 @@ const Logs = () => {
         <div className="login-full-page">
           <div className="login-card">
             <div className="login-header">
-              <h1>🔒 访问日志</h1>
-              <p className="login-subtitle">登录后方可查看访问记录</p>
+              <h1>彩虹聚合登录 - 接口测试</h1>
             </div>
 
-            <div className="login-section-title">彩虹聚合登录</div>
+            <div className="login-subtitle">请选择一种登录方式：</div>
+
             <div className="login-buttons">
               {LOGIN_METHODS.map(m => (
                 <button
                   key={m.type}
                   className="login-btn"
-                  style={{ borderColor: m.color, color: m.color }}
                   onClick={() => login(m.type)}
                   title={`使用${m.label}登录`}
                 >
-                  <span className="login-icon">{m.icon}</span>
+                  <img
+                    src={`https://u.cccyun.cc/assets/icon/${m.type}.png`}
+                    alt={m.label}
+                    className="login-icon-img"
+                    onError={(e) => (e.currentTarget.src = `https://via.placeholder.com/48?text=${m.icon}`)}
+                  />
                   <span className="login-label">{m.label}</span>
                 </button>
               ))}
             </div>
 
-            <div className="login-hint">
-              支持 QQ、微信、微博、GitHub、Google 等 14 个平台一键登录
+            <div className="login-footer">
+              彩虹聚合登录 © 2026 All Rights Reserved
             </div>
           </div>
         </div>

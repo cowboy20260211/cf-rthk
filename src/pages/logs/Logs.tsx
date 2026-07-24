@@ -105,7 +105,7 @@ const Logs = () => {
         <div className="login-full-page">
           <div className="login-card">
             <div className="login-header">
-              <h1>彩虹聚合登录 - 接口测试</h1>
+              <h1>请选择下面方式登录</h1>
             </div>
 
             <div className="login-subtitle">请选择一种登录方式：</div>

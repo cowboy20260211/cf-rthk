@@ -20,12 +20,8 @@ export const LOGIN_METHODS = [
   { type: 'douyin', label: '抖音', color: '#000', icon: '🎵' },
   { type: 'bilibili', label: '哔哩哔哩', color: '#FB7299', icon: '📺' },
   { type: 'dingtalk', label: '钉钉', color: '#1677FF', icon: '📌' },
-  { type: 'gitee', label: 'Gitee', color: '#C71D23', icon: '🗪' },
-  { type: 'github', label: 'GitHub', color: '#24292F', icon: '🐙' },
   { type: 'huawei', label: '华为', color: '#CF0A2C', icon: '📱' },
   { type: 'xiaomi', label: '小米', color: '#FF6900', icon: '⭕' },
-  { type: 'microsoft', label: '微软', color: '#0078D4', icon: '🪟' },
-  { type: 'google', label: 'Google', color: '#4285F4', icon: '🔵' },
 ];
 
 interface AuthContextType {

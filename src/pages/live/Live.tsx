@@ -74,7 +74,7 @@ export default function Live() {
               <div
                 className={`w-20 h-20 ${channel.color} rounded-xl flex items-center justify-center flex-shrink-0`}
               >
-                <span className='text-white text-2xl font-bold'>{channel.name}</span>
+                <span className='text-white text-sm font-bold'>{channel.name}</span>
               </div>
               <div className='flex-1'>
                 <div className='flex items-start justify-between'>

@@ -21,9 +21,12 @@ export function getLiveStreamFallbackUrls(channelId: string): string[] {
 class RTHKService {
   private baseUrl = RTHK_BASE;
   private channelMapping: Record<string, { name: string; nameEn: string; path: string }> = {
-radio1: { name: '香港电台第一台', nameEn: 'Radio 1', path: '/radio/radio1' },
+  radio1: { name: '香港电台第一台', nameEn: 'Radio 1', path: '/radio/radio1' },
   radio2: { name: '香港电台第二台', nameEn: 'Radio 2', path: '/radio/radio2' },
+  radio3: { name: '香港电台第三台', nameEn: 'Radio 3', path: '/radio/radio3' },
+  radio4: { name: '香港电台第四台', nameEn: 'Radio 4', path: '/radio/radio4' },
   radio5: { name: '香港电台第五台', nameEn: 'Radio 5', path: '/radio/radio5' },
+  pth: { name: '香港电台普通话台', nameEn: 'Chinese Music', path: '/radio/radio-pth' },
   };
 
   async getLiveChannels(): Promise<LiveChannel[]> {

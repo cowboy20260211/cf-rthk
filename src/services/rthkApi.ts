@@ -378,7 +378,10 @@ export const rthkApi = {
       const channelNameMap: Record<string, string> = {
         radio1: '香港电台第一台',
         radio2: '香港电台第二台',
+        radio3: '香港电台第三台',
+        radio4: '香港电台第四台',
         radio5: '香港电台第五台',
+        pth: '香港电台普通话台',
       };
       program = {
         id: programIdNormalized,
@@ -452,10 +455,10 @@ export async function fetchAllProgramsFromArchive(channelId?: string): Promise<P
     const channelNameMap: Record<string, string> = {
       radio1: '香港电台第一台',
       radio2: '香港电台第二台',
-      radio3: '第三台',
-      radio4: '第四台',
+      radio3: '香港电台第三台',
+      radio4: '香港电台第四台',
       radio5: '香港电台第五台',
-      pth: '普通話台',
+      pth: '香港电台普通话台',
     };
     const channelName = channelNameMap[targetChannel] || '未知頻道';
 

@@ -13,10 +13,17 @@ export default function Favorites() {
     const mapping: Record<string, string> = {
       '香港电台第一台': 'radio1',
       '香港电台第二台': 'radio2',
+      '香港电台第三台': 'radio3',
+      '香港电台第四台': 'radio4',
       '香港电台第五台': 'radio5',
+      '香港电台普通话台': 'pth',
       '第一台': 'radio1',
       '第二台': 'radio2',
+      '第三台': 'radio3',
+      '第四台': 'radio4',
       '第五台': 'radio5',
+      '普通话台': 'pth',
+      '普通話台': 'pth',
     };
     return mapping[channelName] || 'radio1';
   };

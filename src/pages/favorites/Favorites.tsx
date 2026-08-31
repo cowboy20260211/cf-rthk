@@ -11,9 +11,12 @@ export default function Favorites() {
 
   const getChannelId = (channelName: string): string => {
     const mapping: Record<string, string> = {
-      第一台: 'radio1',
-      第二台: 'radio2',
-      第五台: 'radio5',
+      '香港电台第一台': 'radio1',
+      '香港电台第二台': 'radio2',
+      '香港电台第五台': 'radio5',
+      '第一台': 'radio1',
+      '第二台': 'radio2',
+      '第五台': 'radio5',
     };
     return mapping[channelName] || 'radio1';
   };

@@ -59,15 +59,15 @@ export default function TestScheduleApi() {
             }`}
           >
             {ch === 'radio1'
-              ? '第一台'
+              ? '香港电台第一台'
               : ch === 'radio2'
-                ? '第二台'
+                ? '香港电台第二台'
                 : ch === 'radio3'
                   ? '第三台'
                   : ch === 'radio4'
                     ? '第四台'
                     : ch === 'radio5'
-                      ? '第五台'
+                      ? '香港电台第五台'
                       : '普通話台'}
           </button>
         ))}

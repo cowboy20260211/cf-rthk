@@ -4,11 +4,11 @@ import { rthkApi, fetchAllProgramsFromArchive, type Program } from '../../servic
 import { useFavorite } from '../../stores/FavoriteContext';
 
 const channels = [
-  { id: 'radio1', name: '第一台' },
-  { id: 'radio2', name: '第二台' },
+  { id: 'radio1', name: '香港电台第一台' },
+  { id: 'radio2', name: '香港电台第二台' },
   { id: 'radio3', name: '第三台' },
   { id: 'radio4', name: '第四台' },
-  { id: 'radio5', name: '第五台' },
+  { id: 'radio5', name: '香港电台第五台' },
   { id: 'pth', name: '普通話台' },
 ];
 
@@ -106,7 +106,7 @@ export default function Programs() {
         removeFavorite(fav.id);
       }
     } else {
-      const channelName = channels.find(c => c.id === program.channelId)?.name || '第一台';
+      const channelName = channels.find(c => c.id === program.channelId)?.name || '香港电台第一台';
       addFavorite({
         episodeId: program.id,
         programId: program.id,

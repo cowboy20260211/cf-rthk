@@ -287,7 +287,7 @@ export async function fetchEpisodesFromRTHK(
 export const CHANNELS: Record<string, Channel> = {
   radio1: {
     id: 'radio1',
-    name: '第一台',
+    name: '香港电台第一台',
     nameEn: 'Radio 1',
     frequency: 'FM 92.6MHz',
     description: '新聞、財經、時事',
@@ -295,7 +295,7 @@ export const CHANNELS: Record<string, Channel> = {
   },
   radio2: {
     id: 'radio2',
-    name: '第二台',
+    name: '香港电台第二台',
     nameEn: 'Radio 2',
     frequency: 'FM 94.8MHz',
     description: '流行音樂、青年節目',
@@ -303,7 +303,7 @@ export const CHANNELS: Record<string, Channel> = {
   },
   radio5: {
     id: 'radio5',
-    name: '第五台',
+    name: '香港电台第五台',
     nameEn: 'Radio 5',
     frequency: 'AM 783kHz',
     description: '文化、教育、社區',
@@ -376,9 +376,9 @@ export const rthkApi = {
 
     if (!program) {
       const channelNameMap: Record<string, string> = {
-        radio1: '第一台',
-        radio2: '第二台',
-        radio5: '第五台',
+        radio1: '香港电台第一台',
+        radio2: '香港电台第二台',
+        radio5: '香港电台第五台',
       };
       program = {
         id: programIdNormalized,
@@ -450,11 +450,11 @@ export async function fetchAllProgramsFromArchive(channelId?: string): Promise<P
     const $ = cheerio.load(html);
     const programs: Program[] = [];
     const channelNameMap: Record<string, string> = {
-      radio1: '第一台',
-      radio2: '第二台',
+      radio1: '香港电台第一台',
+      radio2: '香港电台第二台',
       radio3: '第三台',
       radio4: '第四台',
-      radio5: '第五台',
+      radio5: '香港电台第五台',
       pth: '普通話台',
     };
     const channelName = channelNameMap[targetChannel] || '未知頻道';
@@ -586,17 +586,17 @@ export async function fetchPopularPrograms(): Promise<Program[]> {
       }
 
       let channelId = 'radio2';
-      let channelName = '第二台';
+      let channelName = '香港电台第二台';
 
       if (programmeUrl.includes('/radio/radio1/')) {
         channelId = 'radio1';
-        channelName = '第一台';
+        channelName = '香港电台第一台';
       } else if (programmeUrl.includes('/radio/radio2/')) {
         channelId = 'radio2';
-        channelName = '第二台';
+        channelName = '香港电台第二台';
       } else if (programmeUrl.includes('/radio/radio5/')) {
         channelId = 'radio5';
-        channelName = '第五台';
+        channelName = '香港电台第五台';
       }
 
       popularPrograms.push({
@@ -629,7 +629,7 @@ function getDefaultPopularPrograms(): Program[] {
     {
       id: 'keepuco',
       title: '輕談淺唱不夜天',
-      channel: '第二台',
+      channel: '香港电台第二台',
       channelId: 'radio2',
       description: '音樂訪談節目',
       archiveUrl: 'https://www.rthk.hk/radio/radio2/programme/keepuco',
@@ -639,7 +639,7 @@ function getDefaultPopularPrograms(): Program[] {
     {
       id: 'musiclover',
       title: '音樂情人',
-      channel: '第二台',
+      channel: '香港电台第二台',
       channelId: 'radio2',
       description: '經典音樂節目',
       archiveUrl: 'https://www.rthk.hk/radio/radio2/programme/musiclover',
@@ -649,7 +649,7 @@ function getDefaultPopularPrograms(): Program[] {
     {
       id: 'morning',
       title: '晨光第一線',
-      channel: '第一台',
+      channel: '香港电台第一台',
       channelId: 'radio1',
       description: '晨早新聞時事節目',
       archiveUrl: 'https://www.rthk.hk/radio/radio1/programme/morning',
@@ -659,7 +659,7 @@ function getDefaultPopularPrograms(): Program[] {
     {
       id: 'crazylife',
       title: '瘋Show快活人',
-      channel: '第二台',
+      channel: '香港电台第二台',
       channelId: 'radio2',
       description: '輕鬆娛樂節目',
       archiveUrl: 'https://www.rthk.hk/radio/radio2/programme/crazylife',
@@ -669,7 +669,7 @@ function getDefaultPopularPrograms(): Program[] {
     {
       id: 'madelee',
       title: 'Made in Hong Kong 李志剛',
-      channel: '第二台',
+      channel: '香港电台第二台',
       channelId: 'radio2',
       description: '香港音樂文化節目',
       archiveUrl: 'https://www.rthk.hk/radio/radio2/programme/madelee',
@@ -679,7 +679,7 @@ function getDefaultPopularPrograms(): Program[] {
     {
       id: 'millennium',
       title: '千禧年代',
-      channel: '第一台',
+      channel: '香港电台第一台',
       channelId: 'radio1',
       description: '新聞時事評論節目',
       archiveUrl: 'https://www.rthk.hk/radio/radio1/programme/millennium',

@@ -5,7 +5,7 @@ import { RTHK_LIVE_STREAMS } from '../../services/rthk';
 const channels = [
   {
     id: 'radio1',
-    name: '第一台',
+    name: '香港电台第一台',
     nameEn: 'Radio 1',
     description: '新闻、财经、时事',
     color: 'bg-red-600',
@@ -13,7 +13,7 @@ const channels = [
   },
   {
     id: 'radio2',
-    name: '第二台',
+    name: '香港电台第二台',
     nameEn: 'Radio 2',
     description: '流行音乐、青年节目',
     color: 'bg-blue-600',
@@ -21,7 +21,7 @@ const channels = [
   },
   {
     id: 'radio5',
-    name: '第五台',
+    name: '香港电台第五台',
     nameEn: 'Radio 5',
     description: '文化、教育、社区',
     color: 'bg-green-600',

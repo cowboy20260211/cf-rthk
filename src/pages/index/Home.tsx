@@ -81,7 +81,7 @@ export default function Home() {
   const liveChannels = [
     {
       id: 'radio1',
-      name: '第一台',
+      name: '香港电台第一台',
       nameEn: 'Radio 1',
       desc: '新聞、財經、時事',
       frequency: 'FM 92.6MHz',
@@ -89,7 +89,7 @@ export default function Home() {
     },
     {
       id: 'radio2',
-      name: '第二台',
+      name: '香港电台第二台',
       nameEn: 'Radio 2',
       desc: '流行音樂、青年節目',
       frequency: 'FM 94.8MHz',
@@ -97,7 +97,7 @@ export default function Home() {
     },
     {
       id: 'radio5',
-      name: '第五台',
+      name: '香港电台第五台',
       nameEn: 'Radio 5',
       desc: '文化、教育、社區',
       frequency: 'AM 783kHz',

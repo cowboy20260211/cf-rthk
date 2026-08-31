@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { fetchAllProgramsFromArchive, type Program } from '../services/rthkApi';
 
 const channels = [
-  { id: 'radio1', name: '第一台' },
-  { id: 'radio2', name: '第二台' },
+  { id: 'radio1', name: '香港电台第一台' },
+  { id: 'radio2', name: '香港电台第二台' },
   { id: 'radio3', name: '第三台' },
   { id: 'radio4', name: '第四台' },
-  { id: 'radio5', name: '第五台' },
+  { id: 'radio5', name: '香港电台第五台' },
   { id: 'pth', name: '普通話台' },
 ];
 

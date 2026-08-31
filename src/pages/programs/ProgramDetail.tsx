@@ -11,7 +11,7 @@ export default function ProgramDetail() {
   const [data, setData] = useState<{ program: Program; episodes: Episode[] } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const channelName = channel === 'radio1' ? '第一台' : channel === 'radio2' ? '第二台' : '第五台';
+  const channelName = channel === 'radio1' ? '香港电台第一台' : channel === 'radio2' ? '香港电台第二台' : '香港电台第五台';
 
   const isProgramFavorited = data ? favorites.some(f => f.programId === data.program.id) : false;
 

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { fetchPopularPrograms, type Program } from '../services/rthkApi';
 
 const channels = [
-  { id: 'radio1', name: '第一台' },
-  { id: 'radio2', name: '第二台' },
-  { id: 'radio5', name: '第五台' },
+  { id: 'radio1', name: '香港电台第一台' },
+  { id: 'radio2', name: '香港电台第二台' },
+  { id: 'radio5', name: '香港电台第五台' },
 ];
 
 interface ProgramJson {

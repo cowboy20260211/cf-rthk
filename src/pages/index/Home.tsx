@@ -103,6 +103,14 @@ export default function Home() {
       frequency: 'AM 783kHz',
       color: 'bg-green-600',
     },
+    {
+      id: 'asia',
+      name: '亚洲电台粤语台',
+      nameEn: 'Asia Radio Cantonese',
+      desc: '香港粤语广播',
+      frequency: 'FM',
+      color: 'bg-purple-600',
+    },
   ];
 
   const playChannel = (channel: (typeof liveChannels)[0]) => {

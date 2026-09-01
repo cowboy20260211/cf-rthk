@@ -6,6 +6,7 @@ export const RTHK_LIVE_STREAMS: Record<string, string> = {
   radio1: 'https://rthkradio1-live.akamaized.net/hls/live/2035313/radio1/master.m3u8',
   radio2: 'https://rthkradio2-live.akamaized.net/hls/live/2040078/radio2/master.m3u8',
   radio5: 'https://rthkradio5-live.akamaized.net/hls/live/2040081/radio5/master.m3u8',
+  asia: 'https://lhttp.qtfm.cn/live/15318569/64k.mp3',
 };
 
 export const RTHK_LIVE_STREAMS_FALLBACK: Record<string, string[]> = {
@@ -27,6 +28,7 @@ class RTHKService {
   radio4: { name: '香港电台第四台', nameEn: 'Radio 4', path: '/radio/radio4' },
   radio5: { name: '香港电台第五台', nameEn: 'Radio 5', path: '/radio/radio5' },
   pth: { name: '香港电台普通话台', nameEn: 'Chinese Music', path: '/radio/radio-pth' },
+  asia: { name: '亚洲电台粤语台', nameEn: 'Asia Radio Cantonese', path: '/radio/asia' },
   };
 
   async getLiveChannels(): Promise<LiveChannel[]> {

@@ -27,6 +27,14 @@ const channels = [
     color: 'bg-green-600',
     frequency: 'AM 783kHz',
   },
+  {
+    id: 'asia',
+    name: '亚洲电台粤语台',
+    nameEn: 'Asia Radio Cantonese',
+    description: '香港粤语广播',
+    color: 'bg-purple-600',
+    frequency: 'FM',
+  },
 ];
 
 export default function Live() {

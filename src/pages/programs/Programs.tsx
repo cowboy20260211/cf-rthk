@@ -10,6 +10,7 @@ const channels = [
   { id: 'radio4', name: '香港电台第四台' },
   { id: 'radio5', name: '香港电台第五台' },
   { id: 'pth', name: '香港电台普通话台' },
+  { id: 'asia', name: '亚洲电台粤语台' },
 ];
 
 const PAGE_SIZE = 20;

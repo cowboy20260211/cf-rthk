@@ -309,6 +309,14 @@ export const CHANNELS: Record<string, Channel> = {
     description: '文化、教育、社區',
     color: 'bg-green-600',
   },
+  asia: {
+    id: 'asia',
+    name: '亚洲电台粤语台',
+    nameEn: 'Asia Radio Cantonese',
+    frequency: 'FM',
+    description: '香港粤语广播',
+    color: 'bg-purple-600',
+  },
 };
 
 export const PROGRAMS: Record<string, Program[]> = {
@@ -459,6 +467,7 @@ export async function fetchAllProgramsFromArchive(channelId?: string): Promise<P
       radio4: '香港电台第四台',
       radio5: '香港电台第五台',
       pth: '香港电台普通话台',
+      asia: '亚洲电台粤语台',
     };
     const channelName = channelNameMap[targetChannel] || '未知頻道';
 

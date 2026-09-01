@@ -17,6 +17,7 @@ export default function Favorites() {
       '香港电台第四台': 'radio4',
       '香港电台第五台': 'radio5',
       '香港电台普通话台': 'pth',
+      '亚洲电台粤语台': 'asia',
       '第一台': 'radio1',
       '第二台': 'radio2',
       '第三台': 'radio3',
